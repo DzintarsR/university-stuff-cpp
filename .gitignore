@@ -9,6 +9,7 @@
 *.bin
 *.sublime-project
 *.sublime-workspace
+*.doc
 
 # Packages #
 ############
@@ -23,7 +24,6 @@
 *.tar
 *.zip
 *.out
-*.doc
 
 # Logs and databases #
 ######################
