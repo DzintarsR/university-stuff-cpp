@@ -1,0 +1,23 @@
+#!/bin/bash
+
+echo "What do you want to do? [commit, push, pull]: "
+
+read OUT
+
+if [ $OUT == "commit" ]
+	then 
+	git add .
+	git commit -a
+
+elif [ $OUT == "push" ]
+	then
+	git add .
+	git commit -a
+	git push origin master
+
+elif [ $OUT == "pull" ]
+	then
+	git pull
+else
+	echo "Wrong command!"
+fi
