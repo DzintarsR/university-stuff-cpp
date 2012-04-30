@@ -30,22 +30,64 @@ class setData {
     private:
         Auto_H *ah, *ahf;
         Auto_V *av, *avf;
-        Lukso *lks;
+        Lukso *lks, *lksf;
         int ch, cv, lc;
     public:
         setData() {
             ahf = ah = new Auto_H;
             avf = av = new Auto_V;
-            lks = new Lukso;
+            lksf = lks = new Lukso;
             ch=0; cv=0, lc=0;
         };
 
         Auto_H *getHAuto() {
-            return ahf;
+            if (ahf!=NULL && ahf->id) return ahf;
+            else return NULL;
         };
 
         Auto_V *getVAuto() {
-            return avf;
+            if (avf!=NULL && avf->id) return avf;
+            else return NULL;
+        };
+
+        Lukso *getLukso() {
+            return lksf;
+        };
+
+        Auto_H *dropAutoH(Auto_H *a) {
+            Auto_H *p=ahf;
+            while (p!=NULL) {
+                if (p==a) {
+                    ahf = p->next;
+                    delete p;
+                    return ahf;
+                }
+                if (p->next == a) {
+                    p->next = p->next->next;
+                    delete a;
+                    return p->next;
+                }
+                p = p->next;
+            }
+            return NULL;
+        };
+
+        Auto_V *dropAutoV(Auto_V *a) {
+            Auto_V *p=avf;
+            while (p!=NULL) {
+                if (p==a) {
+                    avf = p->next;
+                    delete p;
+                    return avf;
+                }
+                if (p->next == a) {
+                    p->next = p->next->next;
+                    delete a;
+                    return p->next;
+                }
+                p = p->next;
+            }
+            return NULL;
         };
 
         void setAuto(int way, int st, int dt, int id, char *ri, char *ro) {
@@ -81,18 +123,24 @@ class setData {
 
 int main() {
     FILE* inputFile;
-	FILE* outputFile;
+    FILE* outputFile;
 
     int time, id, interval;
-    int endSimulation, luksoTime=0, roadWay=0;
+    int endSimulation, luksoTime, roadWay;
     char command[10];
     char rin[10];
     char rout[10];
 
+    endSimulation=0;
+    luksoTime=0;
+    roadWay=0;
+
     setData *simData = new setData;
 
-	 // Load files
-    inputFile = fopen("unix-tests/krustojums.i8", "r");
+    // Load files
+    // krustojums.in
+    //inputFile = fopen("krustojums.in", "r");
+    inputFile = fopen("unix-tests/krustojums.i1", "r");
 	outputFile = fopen("krustojums.out", "w+");
 
     // Get data and save
@@ -120,36 +168,30 @@ int main() {
         }
     }
 
-
-
     Auto_H *fAuto_H;
-    fAuto_H = simData->getHAuto();
+    // luksoTime
+    int goTime=0, drivenTime=0;
 
-    while (fAuto_H!=NULL) {
-        fprintf(stdout, "%d %d %s %s %d \n", fAuto_H->startTime, fAuto_H->id, fAuto_H->rIn, fAuto_H->rOut, fAuto_H->driveTime);
-        fAuto_H = fAuto_H->next;
-    }
+    // Start simulation
+    do {
+        fAuto_H = simData->getHAuto();
+        if (roadWay == 0) {
+            while (fAuto_H!=NULL) {
+                if ((fAuto_H->startTime+fAuto_H->driveTime) < luksoTime) {
+                    drivenTime = fAuto_H->startTime+fAuto_H->driveTime;
+                    fprintf(outputFile, "%d %s %d\n", drivenTime, fAuto_H->rOut, fAuto_H->id);
+                    fAuto_H = simData->dropAutoH(fAuto_H);
+                } else {
+                    fAuto_H = fAuto_H->next;
+                }
+            }
+        }
+        goTime += luksoTime;
+    } while (goTime < endSimulation);
 
-    Auto_V *fAuto_V;
-    fAuto_V = simData->getVAuto();
-
-    while (fAuto_V!=NULL) {
-        fprintf(stdout, "%d %d %s %s %d \n", fAuto_V->startTime, fAuto_V->id, fAuto_V->rIn, fAuto_V->rOut, fAuto_V->driveTime);
-        fAuto_V = fAuto_V->next;
-    }
-
-
-    /*
-    while (fLukso!=NULL) {
-        fprintf(stdout, "%d %d \n", fLukso->start, fLukso->interval);
-        fLukso = fLukso->next;
-    }
-
-    fprintf(stdout, "%d \n", endSimulation);
-    */
-
+    fprintf(outputFile, "%s", "stop");
 
     fclose(inputFile);
-	fclose(outputFile);
+    fclose(outputFile);
 	return 0;
 }
