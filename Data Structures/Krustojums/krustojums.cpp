@@ -140,7 +140,7 @@ int main() {
     // Load files
     // krustojums.in
     //inputFile = fopen("krustojums.in", "r");
-    inputFile = fopen("unix-tests/krustojums.i1", "r");
+    inputFile = fopen("unix-tests/krustojums.i5", "r");
 	outputFile = fopen("krustojums.out", "w+");
 
     // Get data and save
@@ -169,24 +169,159 @@ int main() {
     }
 
     Auto_H *fAuto_H;
+    Auto_V *fAuto_V;
     // luksoTime
-    int goTime=0, drivenTime=0;
+    int goTime=0;
+    int nMove=0, sMove=0, wMove=0, eMove=0;
+    int spe;
+    int drt;
 
     // Start simulation
     do {
         fAuto_H = simData->getHAuto();
+        fAuto_V = simData->getVAuto();
+
+        // ziemelu dienvidu
         if (roadWay == 0) {
             while (fAuto_H!=NULL) {
-                if ((fAuto_H->startTime+fAuto_H->driveTime) < luksoTime) {
-                    drivenTime = fAuto_H->startTime+fAuto_H->driveTime;
-                    fprintf(outputFile, "%d %s %d\n", drivenTime, fAuto_H->rOut, fAuto_H->id);
-                    fAuto_H = simData->dropAutoH(fAuto_H);
-                } else {
-                    fAuto_H = fAuto_H->next;
+                // Ja brauc no ziemeliem
+                if (fAuto_H!=NULL && fAuto_H->rIn[0] == 'N') {
+                    if (true) {
+                        spe = fAuto_H->startTime+fAuto_H->driveTime;
+                         if (goTime > spe) {
+                            drt = goTime+fAuto_H->driveTime;
+                            if (nMove == 0) drt++;
+                        } else {
+                            drt = (nMove>=spe ? goTime+nMove+fAuto_H->driveTime : goTime+spe );
+                        }
+                        if (spe < luksoTime) {
+                            Auto_H *ph=fAuto_H->next;
+                            fprintf(outputFile, "%d ", drt);
+                            // parbauda vai taja pasa laika neskerso
+                            while (ph!=NULL) {
+                                if (ph->rIn[0] == 'S') {
+                                    if (ph->startTime+ph->driveTime == spe) {
+                                         fprintf(outputFile, "%s %d ", ph->rOut, ph->id);
+                                         ph = simData->dropAutoH(ph);
+                                         break;
+                                    }
+                                    if (ph->startTime+ph->driveTime > spe) break;
+                                }
+                                ph = ph->next;
+                            }
+                            fprintf(outputFile, "%s %d\n", fAuto_H->rOut, fAuto_H->id);
+                            nMove += (nMove>=spe ? nMove+fAuto_H->driveTime : spe );
+                            fAuto_H = simData->dropAutoH(fAuto_H);
+                        } else fAuto_H = fAuto_H->next;
+                    }
+                }
+
+                // Ja brauc no dienvidiem
+                if (fAuto_H!=NULL && fAuto_H->rIn[0] == 'S') {
+                    if (true) {
+                        spe = fAuto_H->startTime+fAuto_H->driveTime;
+                        if (goTime > spe) {
+                            drt = goTime+fAuto_H->driveTime;
+                            if (sMove == 0) drt++;
+                        } else {
+                            drt = (sMove>=spe ? goTime+sMove+fAuto_H->driveTime : goTime+spe );
+                        }
+                        if (spe < luksoTime) {
+                            Auto_H *ph=fAuto_H->next;
+                            fprintf(outputFile, "%d ", drt);
+                            // parbauda vai taja pasa laika neskerso
+                            while (ph!=NULL) {
+                                if (ph->rIn[0] == 'N') {
+                                    if (ph->startTime+ph->driveTime == spe) {
+                                         fprintf(outputFile, "%s %d ", ph->rOut, ph->id);
+                                         ph = simData->dropAutoH(ph);
+                                         break;
+                                    }
+                                    if (ph->startTime+ph->driveTime > spe) break;
+                                }
+                                ph = ph->next;
+                            }
+                            fprintf(outputFile, "%s %d\n", fAuto_H->rOut, fAuto_H->id);
+                            sMove += (sMove>=spe ? sMove+fAuto_H->driveTime : spe );
+                            fAuto_H = simData->dropAutoH(fAuto_H);
+                        } else fAuto_H = fAuto_H->next;
+                    }
                 }
             }
         }
+
+        // Austrumu rietumu
+        if (roadWay == 1) {
+            while (fAuto_V!=NULL) {
+                // Ja brauc no rietumiem
+                if (fAuto_V!=NULL && fAuto_V->rIn[0] == 'W') {
+                    if (true) {
+                        spe = fAuto_V->startTime+fAuto_V->driveTime;
+                        if (goTime > spe) {
+                            drt = goTime+fAuto_V->driveTime;
+                            if (wMove == 0) drt++;
+                        } else {
+                            drt = (wMove>=spe ? goTime+wMove+fAuto_V->driveTime : goTime+spe );
+                        }
+                        if (spe < luksoTime) {
+                            Auto_V *ph=fAuto_V->next;
+                            fprintf(outputFile, "%d ", drt);
+                            // parbauda vai taja pasa laika neskerso
+                            while (ph!=NULL) {
+                                if (ph->rIn[0] == 'E') {
+                                    if (ph->startTime+ph->driveTime == spe) {
+                                         fprintf(outputFile, "%s %d ", ph->rOut, ph->id);
+                                         ph = simData->dropAutoV(ph);
+                                         break;
+                                    }
+                                    if (ph->startTime+ph->driveTime > spe) break;
+                                }
+                                ph = ph->next;
+                            }
+                            fprintf(outputFile, "%s %d\n", fAuto_V->rOut, fAuto_V->id);
+                            wMove += (wMove>=spe ? wMove+fAuto_V->driveTime : spe );
+                            fAuto_V = simData->dropAutoV(fAuto_V);
+                        } else fAuto_V = fAuto_V->next;
+                    }
+                }
+
+                // Ja brauc no austrumiem
+                if (fAuto_V!=NULL && fAuto_V->rIn[0] == 'E') {
+                    if (true) {
+                        spe = fAuto_V->startTime+fAuto_V->driveTime;
+                        if (goTime > spe) {
+                            drt = goTime+fAuto_V->driveTime;
+                            if (eMove == 0) drt++;
+                        } else {
+                            drt = (eMove>=spe ? goTime+eMove+fAuto_V->driveTime : goTime+spe );
+                        }
+                        if (spe < luksoTime) {
+                            Auto_V *ph=fAuto_V->next;
+                            fprintf(outputFile, "%d ", drt);
+                            // parbauda vai taja pasa laika neskerso
+                            while (ph!=NULL) {
+                                if (ph->rIn[0] == 'W') {
+                                    if (ph->startTime+ph->driveTime == spe) {
+                                         fprintf(outputFile, "%s %d ", ph->rOut, ph->id);
+                                         ph = simData->dropAutoV(ph);
+                                         break;
+                                    }
+                                    if (ph->startTime+ph->driveTime > spe) break;
+                                }
+                                ph = ph->next;
+                            }
+                            fprintf(outputFile, "%s %d\n", fAuto_V->rOut, fAuto_V->id);
+                            eMove += (eMove>=spe ? eMove+fAuto_V->driveTime : spe );
+                            fAuto_V = simData->dropAutoV(fAuto_V);
+                        } else fAuto_V = fAuto_V->next;
+                    }
+                }
+            }
+        }
+
         goTime += luksoTime;
+        roadWay = (roadWay==0 ? 1 : 0);
+
     } while (goTime < endSimulation);
 
     fprintf(outputFile, "%s", "stop");
