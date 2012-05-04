@@ -50,10 +50,6 @@ class setData {
             else return NULL;
         };
 
-        Lukso *getLukso() {
-            return lksf;
-        };
-
         Auto_H *dropAutoH(Auto_H *a) {
             Auto_H *p=ahf;
             while (p!=NULL) {
@@ -119,6 +115,22 @@ class setData {
             lks->interval = it;
             lc++;
         };
+
+        void changeTime(int t, int  &lt) {
+            if (lksf==NULL) lt=lt;
+            Lukso *p=lksf;
+            int newi=0;
+            while (p!=NULL) {
+                if (p->start <= t) {
+                    newi=p->interval;
+                    lksf=p->next;
+                    delete p;
+                    p=lksf;
+                } else p=p->next;
+            }
+            if (newi==0) lt=lt;
+            else lt=newi;
+        };
 };
 
 int main() {
@@ -140,7 +152,7 @@ int main() {
     // Load files
     // krustojums.in
     //inputFile = fopen("krustojums.in", "r");
-    inputFile = fopen("unix-tests/krustojums.i5", "r");
+    inputFile = fopen("unix-tests/krustojums.i8", "r");
 	outputFile = fopen("krustojums.out", "w+");
 
     // Get data and save
@@ -170,158 +182,136 @@ int main() {
 
     Auto_H *fAuto_H;
     Auto_V *fAuto_V;
-    // luksoTime
+
     int goTime=0;
     int nMove=0, sMove=0, wMove=0, eMove=0;
-    int spe;
-    int drt;
+    int simulationTimeN;
+    int simulationTimeS;
+    int simulationTimeW;
+    int simulationTimeE;
+
+    int nTimes=0;
+    int sTimes=0;
+    int wTimes=0;
+    int eTimes=0;
+    int extraTime;
 
     // Start simulation
     do {
         fAuto_H = simData->getHAuto();
         fAuto_V = simData->getVAuto();
+        nMove=0; sMove=0; wMove=0; eMove=0;
 
         // ziemelu dienvidu
         if (roadWay == 0) {
+            nTimes=0;
+            sTimes=0;
+            simulationTimeN=goTime;
+            simulationTimeS=goTime;
             while (fAuto_H!=NULL) {
                 // Ja brauc no ziemeliem
-                if (fAuto_H!=NULL && fAuto_H->rIn[0] == 'N') {
-                    if (true) {
-                        spe = fAuto_H->startTime+fAuto_H->driveTime;
-                         if (goTime > spe) {
-                            drt = goTime+fAuto_H->driveTime;
-                            if (nMove == 0) drt++;
-                        } else {
-                            drt = (nMove>=spe ? goTime+nMove+fAuto_H->driveTime : goTime+spe );
-                        }
-                        if (spe < luksoTime) {
-                            Auto_H *ph=fAuto_H->next;
-                            fprintf(outputFile, "%d ", drt);
-                            // parbauda vai taja pasa laika neskerso
-                            while (ph!=NULL) {
-                                if (ph->rIn[0] == 'S') {
-                                    if (ph->startTime+ph->driveTime == spe) {
-                                         fprintf(outputFile, "%s %d ", ph->rOut, ph->id);
-                                         ph = simData->dropAutoH(ph);
-                                         break;
-                                    }
-                                    if (ph->startTime+ph->driveTime > spe) break;
-                                }
-                                ph = ph->next;
-                            }
-                            fprintf(outputFile, "%s %d\n", fAuto_H->rOut, fAuto_H->id);
-                            nMove += (nMove>=spe ? nMove+fAuto_H->driveTime : spe );
+                if (fAuto_H!=NULL && fAuto_H->rIn[0] == 'N' && nTimes==0) {
+                    if (simulationTimeN < fAuto_H->startTime) {
+                        // Ja simulacija iet no sakuma
+                        if (fAuto_H->startTime + fAuto_H->driveTime <= luksoTime && fAuto_H->startTime < endSimulation) {
+                            fprintf(outputFile, "%d %s %d\n", fAuto_H->startTime+fAuto_H->driveTime, fAuto_H->rOut, fAuto_H->id);
+                            simulationTimeN = fAuto_H->startTime+fAuto_H->driveTime;
                             fAuto_H = simData->dropAutoH(fAuto_H);
-                        } else fAuto_H = fAuto_H->next;
+                        } else { nTimes=1; }
+                    } else {
+                        // Ja simulacija jau ir cela
+                        if (nMove == 0 && goTime!=0) extraTime=1;
+                        else extraTime=0;
+                        if (simulationTimeN + fAuto_H->driveTime + extraTime <= goTime+luksoTime && simulationTimeN+extraTime < endSimulation) {
+                            fprintf(outputFile, "%d %s %d\n", simulationTimeN + fAuto_H->driveTime + extraTime, fAuto_H->rOut, fAuto_H->id);
+                            simulationTimeN += fAuto_H->driveTime+extraTime;
+                            fAuto_H = simData->dropAutoH(fAuto_H);
+                        } else { nTimes=1; }
                     }
-                }
+                    nMove++;
+                } else { if (nTimes==1) fAuto_H=fAuto_H->next; }
 
                 // Ja brauc no dienvidiem
-                if (fAuto_H!=NULL && fAuto_H->rIn[0] == 'S') {
-                    if (true) {
-                        spe = fAuto_H->startTime+fAuto_H->driveTime;
-                        if (goTime > spe) {
-                            drt = goTime+fAuto_H->driveTime;
-                            if (sMove == 0) drt++;
-                        } else {
-                            drt = (sMove>=spe ? goTime+sMove+fAuto_H->driveTime : goTime+spe );
-                        }
-                        if (spe < luksoTime) {
-                            Auto_H *ph=fAuto_H->next;
-                            fprintf(outputFile, "%d ", drt);
-                            // parbauda vai taja pasa laika neskerso
-                            while (ph!=NULL) {
-                                if (ph->rIn[0] == 'N') {
-                                    if (ph->startTime+ph->driveTime == spe) {
-                                         fprintf(outputFile, "%s %d ", ph->rOut, ph->id);
-                                         ph = simData->dropAutoH(ph);
-                                         break;
-                                    }
-                                    if (ph->startTime+ph->driveTime > spe) break;
-                                }
-                                ph = ph->next;
-                            }
-                            fprintf(outputFile, "%s %d\n", fAuto_H->rOut, fAuto_H->id);
-                            sMove += (sMove>=spe ? sMove+fAuto_H->driveTime : spe );
+                if (fAuto_H!=NULL && fAuto_H->rIn[0] == 'S' && sTimes==0) {
+                    if (simulationTimeS < fAuto_H->startTime) {
+                        // Ja simulacija iet no sakuma
+                        if (fAuto_H->startTime + fAuto_H->driveTime <= luksoTime && fAuto_H->startTime < endSimulation) {
+                            fprintf(outputFile, "%d %s %d\n", fAuto_H->startTime+fAuto_H->driveTime, fAuto_H->rOut, fAuto_H->id);
+                            simulationTimeS = fAuto_H->startTime+fAuto_H->driveTime;
                             fAuto_H = simData->dropAutoH(fAuto_H);
-                        } else fAuto_H = fAuto_H->next;
+                        } else { sTimes=1; }
+                    } else {
+                        // Ja simulacija jau ir cela
+                        if (sMove == 0 && goTime!=0) extraTime=1;
+                        else extraTime=0;
+                        if (simulationTimeS + fAuto_H->driveTime + extraTime <= goTime+luksoTime && simulationTimeS+extraTime < endSimulation) {
+                            fprintf(outputFile, "%d %s %d\n", simulationTimeS + fAuto_H->driveTime + extraTime, fAuto_H->rOut, fAuto_H->id);
+                            simulationTimeS += fAuto_H->driveTime+extraTime;
+                            fAuto_H = simData->dropAutoH(fAuto_H);
+                        } else { sTimes=1; }
                     }
-                }
+                    sMove++;
+                } else { if (sTimes==1) fAuto_H=fAuto_H->next; }
             }
         }
 
         // Austrumu rietumu
         if (roadWay == 1) {
+            wTimes=0;
+            eTimes=0;
+            simulationTimeW=goTime;
+            simulationTimeE=goTime;
             while (fAuto_V!=NULL) {
                 // Ja brauc no rietumiem
-                if (fAuto_V!=NULL && fAuto_V->rIn[0] == 'W') {
-                    if (true) {
-                        spe = fAuto_V->startTime+fAuto_V->driveTime;
-                        if (goTime > spe) {
-                            drt = goTime+fAuto_V->driveTime;
-                            if (wMove == 0) drt++;
-                        } else {
-                            drt = (wMove>=spe ? goTime+wMove+fAuto_V->driveTime : goTime+spe );
-                        }
-                        if (spe < luksoTime) {
-                            Auto_V *ph=fAuto_V->next;
-                            fprintf(outputFile, "%d ", drt);
-                            // parbauda vai taja pasa laika neskerso
-                            while (ph!=NULL) {
-                                if (ph->rIn[0] == 'E') {
-                                    if (ph->startTime+ph->driveTime == spe) {
-                                         fprintf(outputFile, "%s %d ", ph->rOut, ph->id);
-                                         ph = simData->dropAutoV(ph);
-                                         break;
-                                    }
-                                    if (ph->startTime+ph->driveTime > spe) break;
-                                }
-                                ph = ph->next;
-                            }
-                            fprintf(outputFile, "%s %d\n", fAuto_V->rOut, fAuto_V->id);
-                            wMove += (wMove>=spe ? wMove+fAuto_V->driveTime : spe );
+                if (fAuto_V!=NULL && fAuto_V->rIn[0] == 'W' && wTimes==0) {
+                    if (simulationTimeW < fAuto_V->startTime) {
+                        // Ja simulacija iet no sakuma
+                        if (fAuto_V->startTime + fAuto_V->driveTime <= luksoTime && fAuto_V->startTime < endSimulation) {
+                            fprintf(outputFile, "%d %s %d\n", fAuto_V->startTime+fAuto_V->driveTime, fAuto_V->rOut, fAuto_V->id);
+                            simulationTimeW = fAuto_V->startTime+fAuto_V->driveTime;
                             fAuto_V = simData->dropAutoV(fAuto_V);
-                        } else fAuto_V = fAuto_V->next;
+                        } else { wTimes=1; }
+                    } else {
+                        // Ja simulacija jau ir cela
+                        if (wMove == 0 && goTime!=0) extraTime=1;
+                        else extraTime=0;
+                        if (simulationTimeW + fAuto_V->driveTime + extraTime <= goTime+luksoTime && simulationTimeW+extraTime < endSimulation) {
+                            fprintf(outputFile, "%d %s %d\n", simulationTimeW + fAuto_V->driveTime + extraTime, fAuto_V->rOut, fAuto_V->id);
+                            simulationTimeW += fAuto_V->driveTime+extraTime;
+                            fAuto_V = simData->dropAutoV(fAuto_V);
+                        } else { wTimes=1; }
                     }
-                }
+                    wMove++;
+                } else { if (wTimes==1) fAuto_V=fAuto_V->next; }
 
                 // Ja brauc no austrumiem
-                if (fAuto_V!=NULL && fAuto_V->rIn[0] == 'E') {
-                    if (true) {
-                        spe = fAuto_V->startTime+fAuto_V->driveTime;
-                        if (goTime > spe) {
-                            drt = goTime+fAuto_V->driveTime;
-                            if (eMove == 0) drt++;
-                        } else {
-                            drt = (eMove>=spe ? goTime+eMove+fAuto_V->driveTime : goTime+spe );
-                        }
-                        if (spe < luksoTime) {
-                            Auto_V *ph=fAuto_V->next;
-                            fprintf(outputFile, "%d ", drt);
-                            // parbauda vai taja pasa laika neskerso
-                            while (ph!=NULL) {
-                                if (ph->rIn[0] == 'W') {
-                                    if (ph->startTime+ph->driveTime == spe) {
-                                         fprintf(outputFile, "%s %d ", ph->rOut, ph->id);
-                                         ph = simData->dropAutoV(ph);
-                                         break;
-                                    }
-                                    if (ph->startTime+ph->driveTime > spe) break;
-                                }
-                                ph = ph->next;
-                            }
-                            fprintf(outputFile, "%s %d\n", fAuto_V->rOut, fAuto_V->id);
-                            eMove += (eMove>=spe ? eMove+fAuto_V->driveTime : spe );
+                if (fAuto_V!=NULL && fAuto_V->rIn[0] == 'E' && eTimes==0) {
+                    if (simulationTimeE < fAuto_V->startTime) {
+                        // Ja simulacija iet no sakuma
+                        if (fAuto_V->startTime + fAuto_V->driveTime <= luksoTime && fAuto_V->startTime < endSimulation) {
+                            fprintf(outputFile, "%d %s %d\n", fAuto_V->startTime+fAuto_V->driveTime, fAuto_V->rOut, fAuto_V->id);
+                            simulationTimeE = fAuto_V->startTime+fAuto_V->driveTime;
                             fAuto_V = simData->dropAutoV(fAuto_V);
-                        } else fAuto_V = fAuto_V->next;
+                        } else { eTimes=1; }
+                    } else {
+                        // Ja simulacija jau ir cela
+                        if (eMove == 0 && goTime!=0) extraTime=1;
+                        else extraTime=0;
+                        if (simulationTimeE + fAuto_V->driveTime + extraTime <= goTime+luksoTime && simulationTimeE+extraTime < endSimulation) {
+                            fprintf(outputFile, "%d %s %d\n", simulationTimeE + fAuto_V->driveTime + extraTime, fAuto_V->rOut, fAuto_V->id);
+                            simulationTimeE += fAuto_V->driveTime+extraTime;
+                            fAuto_V = simData->dropAutoV(fAuto_V);
+                        } else { eTimes=1; }
                     }
-                }
+                    eMove++;
+                } else { if (eTimes==1) fAuto_V=fAuto_V->next; }
             }
         }
 
         goTime += luksoTime;
-        roadWay = (roadWay==0 ? 1 : 0);
+        simData->changeTime(goTime, luksoTime);
 
+        roadWay = (roadWay==0 ? 1 : 0);
     } while (goTime < endSimulation);
 
     fprintf(outputFile, "%s", "stop");
