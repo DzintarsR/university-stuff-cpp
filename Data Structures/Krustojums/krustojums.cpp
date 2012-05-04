@@ -151,8 +151,8 @@ int main() {
 
     // Load files
     // krustojums.in
-    inputFile = fopen("krustojums.in", "r");
-    //inputFile = fopen("unix-tests/krustojums.i8", "r");
+    //inputFile = fopen("krustojums.in", "r");
+    inputFile = fopen("unix-tests/krustojums.i4", "r");
 	outputFile = fopen("krustojums.out", "w+");
 
     // Get data and save
@@ -182,6 +182,8 @@ int main() {
 
     Auto_H *fAuto_H;
     Auto_V *fAuto_V;
+    Auto_H *faH;
+    Auto_V *faV;
 
     int goTime=0;
     int nMove=0, sMove=0, wMove=0, eMove=0;
@@ -215,7 +217,19 @@ int main() {
                     if (simulationTimeN < fAuto_H->startTime) {
                         // Ja simulacija iet no sakuma
                         if (fAuto_H->startTime + fAuto_H->driveTime <= luksoTime && fAuto_H->startTime < endSimulation) {
-                            fprintf(outputFile, "%d %s %d\n", fAuto_H->startTime+fAuto_H->driveTime, fAuto_H->rOut, fAuto_H->id);
+                            fprintf(outputFile, "%d", fAuto_H->startTime+fAuto_H->driveTime);
+                            faH = simData->getHAuto();
+                            while (faH!=NULL) {
+                                if (faH->rIn[0] == 'S') {
+                                    if (faH->startTime+faH->driveTime == fAuto_H->startTime+fAuto_H->driveTime) {
+                                        fprintf(outputFile, " %s %d", faH->rOut, faH->id);
+                                        faH = simData->dropAutoH(faH);
+                                    }
+                                    break;
+                                }
+                                faH = faH->next;
+                            }
+                            fprintf(outputFile, " %s %d\n", fAuto_H->rOut, fAuto_H->id);
                             simulationTimeN = fAuto_H->startTime+fAuto_H->driveTime;
                             fAuto_H = simData->dropAutoH(fAuto_H);
                         } else { nTimes=1; }
