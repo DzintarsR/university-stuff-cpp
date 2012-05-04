@@ -151,8 +151,8 @@ int main() {
 
     // Load files
     // krustojums.in
-    //inputFile = fopen("krustojums.in", "r");
-    inputFile = fopen("unix-tests/krustojums.i8", "r");
+    inputFile = fopen("krustojums.in", "r");
+    //inputFile = fopen("unix-tests/krustojums.i8", "r");
 	outputFile = fopen("krustojums.out", "w+");
 
     // Get data and save
@@ -202,6 +202,7 @@ int main() {
         fAuto_V = simData->getVAuto();
         nMove=0; sMove=0; wMove=0; eMove=0;
 
+
         // ziemelu dienvidu
         if (roadWay == 0) {
             nTimes=0;
@@ -229,7 +230,7 @@ int main() {
                         } else { nTimes=1; }
                     }
                     nMove++;
-                } else { if (nTimes==1) fAuto_H=fAuto_H->next; }
+                } else { if (nTimes==1 && fAuto_H!=NULL) fAuto_H=fAuto_H->next; }
 
                 // Ja brauc no dienvidiem
                 if (fAuto_H!=NULL && fAuto_H->rIn[0] == 'S' && sTimes==0) {
@@ -251,9 +252,10 @@ int main() {
                         } else { sTimes=1; }
                     }
                     sMove++;
-                } else { if (sTimes==1) fAuto_H=fAuto_H->next; }
+                } else { if (sTimes==1 && fAuto_H!=NULL) fAuto_H=fAuto_H->next; }
             }
         }
+
 
         // Austrumu rietumu
         if (roadWay == 1) {
@@ -263,6 +265,7 @@ int main() {
             simulationTimeE=goTime;
             while (fAuto_V!=NULL) {
                 // Ja brauc no rietumiem
+
                 if (fAuto_V!=NULL && fAuto_V->rIn[0] == 'W' && wTimes==0) {
                     if (simulationTimeW < fAuto_V->startTime) {
                         // Ja simulacija iet no sakuma
@@ -282,7 +285,7 @@ int main() {
                         } else { wTimes=1; }
                     }
                     wMove++;
-                } else { if (wTimes==1) fAuto_V=fAuto_V->next; }
+                } else { if (wTimes==1 && fAuto_V!=NULL) fAuto_V=fAuto_V->next; }
 
                 // Ja brauc no austrumiem
                 if (fAuto_V!=NULL && fAuto_V->rIn[0] == 'E' && eTimes==0) {
@@ -304,9 +307,10 @@ int main() {
                         } else { eTimes=1; }
                     }
                     eMove++;
-                } else { if (eTimes==1) fAuto_V=fAuto_V->next; }
+                } else { if (eTimes==1 && fAuto_V!=NULL) fAuto_V=fAuto_V->next; }
             }
         }
+
 
         goTime += luksoTime;
         simData->changeTime(goTime, luksoTime);
