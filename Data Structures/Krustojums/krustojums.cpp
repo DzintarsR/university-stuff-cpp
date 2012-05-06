@@ -17,17 +17,25 @@ struct Lukso {
     Lukso() {next=NULL;}
 };
 
+struct Result {
+    int start;
+    char r[101];
+    Result *next;
+};
+
 class setData {
     private:
         Auto *ah, *ahf, *av, *avf;
         Lukso *lks, *lksf;
-        int ch, cv, lc;
+        Result *rsf, *rs;
+        int ch, cv, lc, cr;
     public:
         setData() {
             ahf = ah = new Auto;
             avf = av = new Auto;
             lksf = lks = new Lukso;
-            ch=0; cv=0, lc=0;
+            rsf = rs = new Result;
+            ch=0; cv=0, lc=0, cr=0;
         };
 
         ~setData() {
@@ -41,6 +49,10 @@ class setData {
                 delete p;
             }
             p=NULL;
+        };
+
+        Result *getResult() {
+            return rsf;
         };
 
         Auto *getHAuto() {
@@ -134,6 +146,40 @@ class setData {
             if (newi==0) lt=lt;
             else lt=newi;
         };
+
+        void setResult(int t, char *a) {
+            if (cr!=0) rs = rs->next = new Result;
+            rs->start = t;
+            strcpy(rs->r, a);
+            cr++;
+        };
+
+        void sortData() {
+            Result *a, *b, *c, *e, *tmp;
+            a=b=c=e=tmp=NULL;
+            while(e != rsf->next) {
+                c = a = rsf; b = a->next;
+                while(a != e) {
+                    if(a->start > b->start) {
+                        if(a == rsf) {
+                            tmp = b -> next;
+                            b->next = a;
+                            a->next = tmp;
+                            rsf = b;
+                            c = b;
+                        } else {
+                            tmp = b->next;
+                            b->next = a;
+                            a->next = tmp;
+                            c->next = b;
+                            c = b;
+                        }
+                    } else { c = a; a = a->next; }
+                    b = a->next;
+                    if(b == e) e = a;
+                }
+            }
+        };
 };
 
 int main() {
@@ -154,8 +200,8 @@ int main() {
 
     // Load files
     // krustojums.in
-    //inputFile = fopen("krustojums.in", "r");
-    inputFile = fopen("unix-tests/krustojums.i4", "r");
+    inputFile = fopen("krustojums.in", "r");
+    //inputFile = fopen("unix-tests/krustojums.i4", "r");
 	outputFile = fopen("krustojums.out", "w+");
 
     // Get data and save
@@ -201,6 +247,9 @@ int main() {
     int eTimes=0;
     int extraTime;
 
+    char add[101];
+    char buf[101];
+
     // Start simulation
     do {
         fAuto_H = simData->getHAuto();
@@ -220,20 +269,29 @@ int main() {
                     if (simulationTimeN < fAuto_H->startTime) {
                         // Ja simulacija iet no sakuma
                         if (fAuto_H->startTime + fAuto_H->driveTime <= luksoTime && fAuto_H->startTime < endSimulation) {
-                            fprintf(outputFile, "%d", fAuto_H->startTime+fAuto_H->driveTime);
+                            sprintf(buf, "%d", fAuto_H->startTime+fAuto_H->driveTime);
+                            strcpy(add, buf);
+                            //fprintf(outputFile, "%d", fAuto_H->startTime+fAuto_H->driveTime);
                             faH = simData->getHAuto();
                             while (faH!=NULL) {
                                 if (faH->rIn[0] == 'S') {
                                     if (faH->startTime+faH->driveTime == fAuto_H->startTime+fAuto_H->driveTime) {
-                                        fprintf(outputFile, " %s %d", faH->rOut, faH->id);
+                                        sprintf(buf, " %s %d", faH->rOut, faH->id);
+                                        strcat(add, buf);
+                                        //fprintf(outputFile, " %s %d", faH->rOut, faH->id);
+                                        simulationTimeS += faH->startTime+faH->driveTime;
                                         faH = simData->dropAutoH(faH);
                                     }
                                     break;
                                 }
                                 faH = faH->next;
                             }
-                            fprintf(outputFile, " %s %d\n", fAuto_H->rOut, fAuto_H->id);
-                            simulationTimeN = fAuto_H->startTime+fAuto_H->driveTime;
+                            sprintf(buf, " %s %d", fAuto_H->rOut, fAuto_H->id);
+                            strcat(add, buf);
+                            // Set result
+                            simData->setResult(fAuto_H->startTime+fAuto_H->driveTime, add);
+                            //fprintf(outputFile, " %s %d\n", fAuto_H->rOut, fAuto_H->id);
+                            simulationTimeN += fAuto_H->startTime+fAuto_H->driveTime;
                             fAuto_H = simData->dropAutoH(fAuto_H);
                         } else { nTimes=1; }
                     } else {
@@ -241,19 +299,28 @@ int main() {
                         if (nMove == 0 && goTime!=0) extraTime=1;
                         else extraTime=0;
                         if (simulationTimeN + fAuto_H->driveTime + extraTime <= goTime+luksoTime && simulationTimeN+extraTime < endSimulation) {
-                            fprintf(outputFile, "%d", simulationTimeN + fAuto_H->driveTime + extraTime);
+                            sprintf(buf, "%d", simulationTimeN + fAuto_H->driveTime + extraTime);
+                            strcpy(add, buf);
+                            //fprintf(outputFile, "%d", simulationTimeN + fAuto_H->driveTime + extraTime);
                             faH = simData->getHAuto();
                             while (faH!=NULL) {
                                 if (faH->rIn[0] == 'S') {
-                                    if (simulationTimeN + faH->driveTime + extraTime == simulationTimeN + fAuto_H->driveTime + extraTime) {
-                                        fprintf(outputFile, " %s %d", faH->rOut, faH->id);
+                                    if (simulationTimeS + faH->driveTime + extraTime == simulationTimeN + fAuto_H->driveTime + extraTime) {
+                                        sprintf(buf, " %s %d", faH->rOut, faH->id);
+                                        strcat(add, buf);
+                                        //fprintf(outputFile, " %s %d", faH->rOut, faH->id);
+                                        simulationTimeS += faH->driveTime + extraTime;
                                         faH = simData->dropAutoH(faH);
                                     }
                                     break;
                                 }
                                 faH = faH->next;
                             }
-                            fprintf(outputFile, " %s %d\n", fAuto_H->rOut, fAuto_H->id);
+                            sprintf(buf, " %s %d", fAuto_H->rOut, fAuto_H->id);
+                            strcat(add, buf);
+                            // Set result
+                            simData->setResult(simulationTimeN + fAuto_H->driveTime + extraTime, add);
+                            //fprintf(outputFile, " %s %d\n", fAuto_H->rOut, fAuto_H->id);
                             simulationTimeN += fAuto_H->driveTime+extraTime;
                             fAuto_H = simData->dropAutoH(fAuto_H);
                         } else { nTimes=1; }
@@ -266,22 +333,30 @@ int main() {
                     if (simulationTimeS < fAuto_H->startTime) {
                         // Ja simulacija iet no sakuma
                         if (fAuto_H->startTime + fAuto_H->driveTime <= luksoTime && fAuto_H->startTime < endSimulation) {
-                            fprintf(outputFile, "%d", fAuto_H->startTime+fAuto_H->driveTime);
-                            fprintf(outputFile, " %s %d", fAuto_H->rOut, fAuto_H->id);
+                            sprintf(buf, "%d %s %d", fAuto_H->startTime+fAuto_H->driveTime, fAuto_H->rOut, fAuto_H->id);
+                            strcpy(add, buf);
+                            //fprintf(outputFile, "%d", fAuto_H->startTime+fAuto_H->driveTime);
+                            //fprintf(outputFile, " %s %d", fAuto_H->rOut, fAuto_H->id);
                             faH = simData->getHAuto();
-                            int ct1=0;
+                            //int ct1=0;
                             while (faH!=NULL) {
                                 if (faH->rIn[0] == 'N') {
                                     if (faH->startTime+faH->driveTime == fAuto_H->startTime+fAuto_H->driveTime) {
-                                        fprintf(outputFile, " %s %d\n", faH->rOut, faH->id);
-                                        faH = simData->dropAutoH(faH); ct1++;
+                                        sprintf(buf, " %s %d", fAuto_H->rOut, fAuto_H->id);
+                                        strcat(add, buf);
+                                        //fprintf(outputFile, " %s %d\n", faH->rOut, faH->id);
+                                        simulationTimeN += faH->startTime+faH->driveTime;
+                                        faH = simData->dropAutoH(faH);
+                                        //ct1++;
                                     }
                                     break;
                                 }
                                 faH = faH->next;
                             }
-                            if (ct1==0) fprintf(outputFile, "\n");
-                            simulationTimeS = fAuto_H->startTime+fAuto_H->driveTime;
+                            // Set result
+                            simData->setResult(fAuto_H->startTime+fAuto_H->driveTime, add);
+                            //if (ct1==0) fprintf(outputFile, "\n");
+                            simulationTimeS += fAuto_H->startTime+fAuto_H->driveTime;
                             fAuto_H = simData->dropAutoH(fAuto_H);
                         } else { sTimes=1; }
                     } else {
@@ -289,21 +364,28 @@ int main() {
                         if (sMove == 0 && goTime!=0) extraTime=1;
                         else extraTime=0;
                         if (simulationTimeS + fAuto_H->driveTime + extraTime <= goTime+luksoTime && simulationTimeS+extraTime < endSimulation) {
-                            fprintf(outputFile, "%d", simulationTimeS + fAuto_H->driveTime + extraTime);
-                            fprintf(outputFile, " %s %d", fAuto_H->rOut, fAuto_H->id);
+                            sprintf(buf, "%d %s %d", simulationTimeS + fAuto_H->driveTime + extraTime, fAuto_H->rOut, fAuto_H->id);
+                            strcpy(add, buf);
+                            //fprintf(outputFile, "%d", simulationTimeS + fAuto_H->driveTime + extraTime);
+                            //fprintf(outputFile, " %s %d", fAuto_H->rOut, fAuto_H->id);
                             faH = simData->getHAuto();
                             int ct2=0;
                             while (faH!=NULL) {
                                 if (faH->rIn[0] == 'N') {
-                                    if (simulationTimeS + faH->driveTime + extraTime == simulationTimeS + fAuto_H->driveTime + extraTime) {
-                                        fprintf(outputFile, " %s %d\n", faH->rOut, faH->id);
+                                    if (simulationTimeN + faH->driveTime + extraTime == simulationTimeS + fAuto_H->driveTime + extraTime) {
+                                        sprintf(buf, " %s %d", fAuto_H->rOut, fAuto_H->id);
+                                        strcat(add, buf);
+                                        //fprintf(outputFile, " %s %d\n", faH->rOut, faH->id);
+                                        simulationTimeN += faH->driveTime + extraTime;
                                         faH = simData->dropAutoH(faH); ct2++;
                                     }
                                     break;
                                 }
                                 faH = faH->next;
                             }
-                            if (ct2==0) fprintf(outputFile, "\n");
+                            // Set result
+                            simData->setResult(simulationTimeS + fAuto_H->driveTime + extraTime, add);
+                            //if (ct2==0) fprintf(outputFile, "\n");
                             simulationTimeS += fAuto_H->driveTime+extraTime;
                             fAuto_H = simData->dropAutoH(fAuto_H);
                         } else { sTimes=1; }
@@ -326,12 +408,15 @@ int main() {
                     if (simulationTimeW < fAuto_V->startTime) {
                         // Ja simulacija iet no sakuma
                         if (fAuto_V->startTime + fAuto_V->driveTime <= simulationTimeW+luksoTime && fAuto_V->startTime < endSimulation) {
-                            fprintf(outputFile, "%d", fAuto_V->startTime+fAuto_V->driveTime);
+                            sprintf(buf, "%d", fAuto_V->startTime+fAuto_V->driveTime);
+                            strcpy(add, buf);
+                            //fprintf(outputFile, "%d", fAuto_V->startTime+fAuto_V->driveTime);
                             faV = simData->getVAuto();
                             int ct3=0;
                             while (faV!=NULL) {
                                 if (faV->rIn[0] == 'E') {
                                     if (faV->startTime+faV->driveTime == fAuto_V->startTime+fAuto_V->driveTime) {
+                                        simulationTimeE += faV->startTime+faV->driveTime;
                                         ct3++;
                                     }
                                     break;
@@ -340,18 +425,26 @@ int main() {
                             }
                             if (ct3!=0) {
                                 if (faV->rOut[0]=='N') {
-                                    fprintf(outputFile, " %s %d", faV->rOut, faV->id);
-                                    fprintf(outputFile, " %s %d\n", fAuto_V->rOut, fAuto_V->id);
+                                    sprintf(buf, " %s %d %s %d", faV->rOut, faV->id, fAuto_V->rOut, fAuto_V->id);
+                                    strcat(add, buf);
+                                    //fprintf(outputFile, " %s %d", faV->rOut, faV->id);
+                                    //fprintf(outputFile, " %s %d\n", fAuto_V->rOut, fAuto_V->id);
                                 } else {
-                                    fprintf(outputFile, " %s %d", fAuto_V->rOut, fAuto_V->id);
-                                    fprintf(outputFile, " %s %d\n", faV->rOut, faV->id);
+                                    sprintf(buf, " %s %d %s %d", fAuto_V->rOut, fAuto_V->id, faV->rOut, faV->id);
+                                    strcat(add, buf);
+                                    //fprintf(outputFile, " %s %d", fAuto_V->rOut, fAuto_V->id);
+                                    //fprintf(outputFile, " %s %d\n", faV->rOut, faV->id);
                                 }
                                 faV = simData->dropAutoV(faV);
                             } else {
-                                fprintf(outputFile, " %s %d\n", fAuto_V->rOut, fAuto_V->id);
+                                sprintf(buf, " %s %d", fAuto_V->rOut, fAuto_V->id);
+                                strcat(add, buf);
+                                //fprintf(outputFile, " %s %d\n", fAuto_V->rOut, fAuto_V->id);
                             }
+                            // Set result
+                            simData->setResult(fAuto_V->startTime+fAuto_V->driveTime, add);
 
-                            simulationTimeW = fAuto_V->startTime+fAuto_V->driveTime;
+                            simulationTimeW += fAuto_V->startTime+fAuto_V->driveTime;
                             fAuto_V = simData->dropAutoV(fAuto_V);
                         } else { wTimes=1; }
                     } else {
@@ -359,12 +452,15 @@ int main() {
                         if (wMove == 0 && goTime!=0) extraTime=1;
                         else extraTime=0;
                         if (simulationTimeW + fAuto_V->driveTime + extraTime <= goTime+luksoTime && simulationTimeW+extraTime < endSimulation) {
-                            fprintf(outputFile, "%d", simulationTimeW + fAuto_V->driveTime + extraTime);
+                            sprintf(buf, "%d", simulationTimeW + fAuto_V->driveTime + extraTime);
+                            strcpy(add, buf);
+                            //fprintf(outputFile, "%d", simulationTimeW + fAuto_V->driveTime + extraTime);
                             faV = simData->getVAuto();
                             int ct4=0;
                             while (faV!=NULL) {
                                 if (faV->rIn[0] == 'E') {
-                                    if (simulationTimeW + faV->driveTime + extraTime == simulationTimeW + fAuto_V->driveTime + extraTime) {
+                                    if (simulationTimeE + faV->driveTime + extraTime == simulationTimeW + fAuto_V->driveTime + extraTime) {
+                                        simulationTimeE += faV->driveTime + extraTime;
                                         ct4++;
                                     }
                                     break;
@@ -373,16 +469,24 @@ int main() {
                             }
                             if (ct4!=0) {
                                 if (faV->rOut[0]=='N') {
-                                    fprintf(outputFile, " %s %d", faV->rOut, faV->id);
-                                    fprintf(outputFile, " %s %d\n", fAuto_V->rOut, fAuto_V->id);
+                                    sprintf(buf, " %s %d %s %d", faV->rOut, faV->id, fAuto_V->rOut, fAuto_V->id);
+                                    strcat(add, buf);
+                                    //fprintf(outputFile, " %s %d", faV->rOut, faV->id);
+                                    //fprintf(outputFile, " %s %d\n", fAuto_V->rOut, fAuto_V->id);
                                 } else {
-                                    fprintf(outputFile, " %s %d", fAuto_V->rOut, fAuto_V->id);
-                                    fprintf(outputFile, " %s %d\n", faV->rOut, faV->id);
+                                    sprintf(buf, " %s %d %s %d", fAuto_V->rOut, fAuto_V->id, faV->rOut, faV->id);
+                                    strcat(add, buf);
+                                    //fprintf(outputFile, " %s %d", fAuto_V->rOut, fAuto_V->id);
+                                    //fprintf(outputFile, " %s %d\n", faV->rOut, faV->id);
                                 }
                                 faV = simData->dropAutoV(faV);
                             } else {
-                                fprintf(outputFile, " %s %d\n", fAuto_V->rOut, fAuto_V->id);
+                                sprintf(buf, " %s %d", fAuto_V->rOut, fAuto_V->id);
+                                strcat(add, buf);
+                                //fprintf(outputFile, " %s %d\n", fAuto_V->rOut, fAuto_V->id);
                             }
+                            // Set result
+                            simData->setResult(simulationTimeW + fAuto_V->driveTime + extraTime, add);
 
                             simulationTimeW += fAuto_V->driveTime+extraTime;
                             fAuto_V = simData->dropAutoV(fAuto_V);
@@ -396,12 +500,15 @@ int main() {
                     if (simulationTimeE < fAuto_V->startTime) {
                         // Ja simulacija iet no sakuma
                         if (fAuto_V->startTime + fAuto_V->driveTime <= simulationTimeE+luksoTime && fAuto_V->startTime < endSimulation) {
-                            fprintf(outputFile, "%d", fAuto_V->startTime+fAuto_V->driveTime);
+                            sprintf(buf, "%d", fAuto_V->startTime+fAuto_V->driveTime);
+                            strcpy(add, buf);
+                            //fprintf(outputFile, "%d", fAuto_V->startTime+fAuto_V->driveTime);
                             faV = simData->getVAuto();
                             int ct5=0;
                             while (faV!=NULL) {
                                 if (faV->rIn[0] == 'W') {
                                     if (faV->startTime+faV->driveTime == fAuto_V->startTime+fAuto_V->driveTime) {
+                                        simulationTimeW += faV->startTime+faV->driveTime;
                                         ct5++;
                                     }
                                     break;
@@ -409,21 +516,31 @@ int main() {
                                 faV = faV->next;
                             }
                             if (fAuto_V->rOut[0]=='N') {
-                                fprintf(outputFile, " %s %d", fAuto_V->rOut, fAuto_V->id);
+                                sprintf(buf, " %s %d", fAuto_V->rOut, fAuto_V->id);
+                                strcat(add, buf);
+                                //fprintf(outputFile, " %s %d", fAuto_V->rOut, fAuto_V->id);
                                 if (ct5!=0) {
-                                    fprintf(outputFile, " %s %d", faV->rOut, faV->id);
+                                    sprintf(buf, " %s %d", faV->rOut, faV->id);
+                                    strcat(add, buf);
+                                    //fprintf(outputFile, " %s %d", faV->rOut, faV->id);
                                     faV = simData->dropAutoV(faV);
                                 }
-                                fprintf(outputFile, "\n");
+                                //fprintf(outputFile, "\n");
                             } else {
                                 if (ct5!=0) {
-                                    fprintf(outputFile, " %s %d", faV->rOut, faV->id);
+                                    sprintf(buf, " %s %d", faV->rOut, faV->id);
+                                    strcat(add, buf);
+                                    //fprintf(outputFile, " %s %d", faV->rOut, faV->id);
                                     faV = simData->dropAutoV(faV);
                                 }
-                                fprintf(outputFile, " %s %d\n", fAuto_V->rOut, fAuto_V->id);
+                                sprintf(buf, " %s %d", fAuto_V->rOut, fAuto_V->id);
+                                strcat(add, buf);
+                                //fprintf(outputFile, " %s %d\n", fAuto_V->rOut, fAuto_V->id);
                             }
+                            // Set result
+                            simData->setResult(fAuto_V->startTime+fAuto_V->driveTime, add);
 
-                            simulationTimeE = fAuto_V->startTime+fAuto_V->driveTime;
+                            simulationTimeE += fAuto_V->startTime+fAuto_V->driveTime;
                             fAuto_V = simData->dropAutoV(fAuto_V);
                         } else { eTimes=1; }
                     } else {
@@ -431,12 +548,15 @@ int main() {
                         if (eMove == 0 && goTime!=0) extraTime=1;
                         else extraTime=0;
                         if (simulationTimeE + fAuto_V->driveTime + extraTime <= goTime+luksoTime && simulationTimeE+extraTime < endSimulation) {
-                            fprintf(outputFile, "%d", simulationTimeE + fAuto_V->driveTime + extraTime);
+                            sprintf(buf, "%d", simulationTimeE + fAuto_V->driveTime + extraTime);
+                            strcpy(add, buf);
+                            //fprintf(outputFile, "%d", simulationTimeE + fAuto_V->driveTime + extraTime);
                             faV = simData->getVAuto();
                             int ct6=0;
                             while (faV!=NULL) {
                                 if (faV->rIn[0] == 'W') {
-                                    if (simulationTimeE + faV->driveTime + extraTime == simulationTimeE + fAuto_V->driveTime + extraTime) {
+                                    if (simulationTimeW + faV->driveTime + extraTime == simulationTimeE + fAuto_V->driveTime + extraTime) {
+                                        simulationTimeW += faV->driveTime + extraTime;
                                         ct6++;
                                     }
                                     break;
@@ -444,19 +564,29 @@ int main() {
                                 faV = faV->next;
                             }
                             if (fAuto_V->rOut[0]=='N') {
-                                fprintf(outputFile, " %s %d", fAuto_V->rOut, fAuto_V->id);
+                                sprintf(buf, " %s %d", fAuto_V->rOut, fAuto_V->id);
+                                strcat(add, buf);
+                                //fprintf(outputFile, " %s %d", fAuto_V->rOut, fAuto_V->id);
                                 if (ct6!=0) {
-                                    fprintf(outputFile, " %s %d", faV->rOut, faV->id);
+                                    sprintf(buf, " %s %d", faV->rOut, faV->id);
+                                    strcat(add, buf);
+                                    //fprintf(outputFile, " %s %d", faV->rOut, faV->id);
                                     faV = simData->dropAutoV(faV);
                                 }
-                                fprintf(outputFile, "\n");
+                                //fprintf(outputFile, "\n");
                             } else {
                                 if (ct6!=0) {
-                                    fprintf(outputFile, " %s %d", faV->rOut, faV->id);
-                                    faV = simData->dropAutoV(faV);
+                                    sprintf(buf, " %s %d", faV->rOut, faV->id);
+                                    strcat(add, buf);
+                                    //fprintf(outputFile, " %s %d", faV->rOut, faV->id);
+                                    //faV = simData->dropAutoV(faV);
                                 }
-                                fprintf(outputFile, " %s %d\n", fAuto_V->rOut, fAuto_V->id);
+                                sprintf(buf, " %s %d", fAuto_V->rOut, fAuto_V->id);
+                                strcat(add, buf);
+                                //fprintf(outputFile, " %s %d\n", fAuto_V->rOut, fAuto_V->id);
                             }
+                            // Set result
+                            simData->setResult(simulationTimeE + fAuto_V->driveTime + extraTime, add);
 
                             simulationTimeE += fAuto_V->driveTime+extraTime;
                             fAuto_V = simData->dropAutoV(fAuto_V);
@@ -474,7 +604,17 @@ int main() {
         roadWay = (roadWay==0 ? 1 : 0);
     } while (goTime < endSimulation);
 
-    fprintf(outputFile, "%s", "stop");
+    // Sakarto logiska seciba
+    simData->sortData();
+
+    // Izdruka rezultatu uz faila
+    Result *p=simData->getResult();
+    while (p!=NULL) {
+        fprintf(outputFile, "%s\n", p->r);
+        p=p->next;
+    }
+
+    fprintf(outputFile, "stop");
 
     fclose(inputFile);
     fclose(outputFile);
