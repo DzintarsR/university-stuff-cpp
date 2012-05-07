@@ -245,6 +245,7 @@ int main() {
     int sTimes=0;
     int wTimes=0;
     int eTimes=0;
+    int check=0;
     int extraTime;
 
     char add[101];
@@ -274,7 +275,9 @@ int main() {
                             faH = simData->getHAuto();
                             while (faH!=NULL) {
                                 if (faH->rIn[0] == 'S') {
-                                    if (faH->startTime+faH->driveTime == fAuto_H->startTime+fAuto_H->driveTime) {
+                                    check=faH->startTime;
+                                    if (simulationTimeS > 0 ) check=simulationTimeS;
+                                    if (check+faH->driveTime == fAuto_H->startTime+fAuto_H->driveTime) {
                                         sprintf(buf, " %s %d", faH->rOut, faH->id);
                                         strcat(add, buf);
                                         simulationTimeS += faH->startTime+faH->driveTime;
@@ -332,8 +335,10 @@ int main() {
                             faH = simData->getHAuto();
                             while (faH!=NULL) {
                                 if (faH->rIn[0] == 'N') {
-                                    if (faH->startTime+faH->driveTime == fAuto_H->startTime+fAuto_H->driveTime) {
-                                        sprintf(buf, " %s %d", fAuto_H->rOut, fAuto_H->id);
+                                    check=faH->startTime;
+                                    if (simulationTimeN > 0 ) check=simulationTimeN;
+                                    if (check+faH->driveTime == fAuto_H->startTime+fAuto_H->driveTime) {
+                                        sprintf(buf, " %s %d", faH->rOut, faH->id);
                                         strcat(add, buf);
                                         simulationTimeN += faH->startTime+faH->driveTime;
                                         faH = simData->dropAutoH(faH);
@@ -359,7 +364,7 @@ int main() {
                             while (faH!=NULL) {
                                 if (faH->rIn[0] == 'N') {
                                     if (simulationTimeN + faH->driveTime + extraTime == simulationTimeS + fAuto_H->driveTime + extraTime) {
-                                        sprintf(buf, " %s %d", fAuto_H->rOut, fAuto_H->id);
+                                        sprintf(buf, " %s %d", faH->rOut, faH->id);
                                         strcat(add, buf);
                                         simulationTimeN += faH->driveTime + extraTime;
                                         faH = simData->dropAutoH(faH); ct2++;
@@ -398,7 +403,9 @@ int main() {
                             int ct3=0;
                             while (faV!=NULL) {
                                 if (faV->rIn[0] == 'E') {
-                                    if (faV->startTime+faV->driveTime == fAuto_V->startTime+fAuto_V->driveTime) {
+                                    check=faV->startTime;
+                                    if (simulationTimeE > 0 ) check=simulationTimeE;
+                                    if (check+faV->driveTime == fAuto_V->startTime+fAuto_V->driveTime) {
                                         simulationTimeE += faV->startTime+faV->driveTime;
                                         ct3++;
                                     }
@@ -478,7 +485,9 @@ int main() {
                             int ct5=0;
                             while (faV!=NULL) {
                                 if (faV->rIn[0] == 'W') {
-                                    if (faV->startTime+faV->driveTime == fAuto_V->startTime+fAuto_V->driveTime) {
+                                    check=faV->startTime;
+                                    if (simulationTimeW > 0 ) check=simulationTimeW;
+                                    if (check+faV->driveTime == fAuto_V->startTime+fAuto_V->driveTime) {
                                         simulationTimeW += faV->startTime+faV->driveTime;
                                         ct5++;
                                     }
