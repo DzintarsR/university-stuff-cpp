@@ -15,17 +15,8 @@ class Vertiba {
         int next;
     public:
         friend ostream& operator<<(ostream &f, Vertiba &v);
-        Vertiba(int y=0, int m=0, int d=0, int n=0) {
-            setRecord(y,m,d,n);
-        };
-        void getRecord() {
-            cout << "Year: " << year << " Month: " << month << " Day: " << day << endl;
-        };
-        void setRecord(int y, int m, int d, int n) {
-            year = y;
-            month = m;
-            day = d;
-            next = n;
+        Vertiba(int y=0, int m=0, int d=0, int n=1) {
+            year = y; month = m; day = d; next = n;
         };
         void writeRecord(ostream &f) {
             f.write((char*)this, sizeof(Vertiba));
@@ -35,14 +26,24 @@ class Vertiba {
             return f.good();
         };
         void createFile(istream &fin=cin, ostream &fout=cout) {
-            while (fin) {
-                cout << "Insert date (year month day): ";
-                cin >> year >> month >> day;
-                if (year>0 && month>0 && month<=12 && day>0 && day<=31) {
+            int c_y, c_n;
+            cout << "Insert date (year month day): ";
+            cin >> c_y >> month >> day;
+            do {
+                if (c_y>0 && month>0 && month<=12 && day>0 && day<=31) {
                     next++;
+                    year = c_y;
                     writeRecord(fout);
                 } else cout << "Incorrect data! Try again!" << endl;
-            }
+                cout << "Insert date (year month day): ";
+                cin >> c_y >> month >> day;
+            } while (fin);
+
+            fout.clear();
+            fout.seekp(next*sizeof(Vertiba)-2*sizeof(Vertiba));
+            c_n=next; next=0;
+            writeRecord(fout);
+            next=c_n;
         };
         bool longYear(int y) {
             int s=y;
@@ -62,7 +63,7 @@ class Vertiba {
         void LogicalRecord(istream &f) {
             int date;
             printSort *p = new printSort;
-            printSort *a, *r, *g;
+            printSort *a, *r, *g, *pf=p;
 
             // Sakārto sarakstu pēc loģiskiem datumiem
             while (readRecord(f)) {
@@ -103,31 +104,69 @@ class Vertiba {
                 }
                 p = p->next;
             }
+
+            while(pf!=NULL) {
+                a=pf;
+                pf=pf->next;
+                delete a;
+            }
+        };
+
+        void appendData(istream &fin=cin, ostream &fout=cout) {
+            cin.clear();
+            cin.ignore();
+
+            fout.seekp(next*sizeof(Vertiba)-2*sizeof(Vertiba));
+            writeRecord(fout);
+
+            fout.seekp(next*sizeof(Vertiba)-sizeof(Vertiba));
+            int c_y, c_n;
+            cout << "Insert date (year month day): ";
+            cin >> c_y >> month >> day;
+            do {
+                if (c_y>0 && month>0 && month<=12 && day>0 && day<=31) {
+                    next++;
+                    year = c_y;
+                    writeRecord(fout);
+                } else cout << "Incorrect data! Try again!" << endl;
+                cout << "Insert date (year month day): ";
+                cin >> c_y >> month >> day;
+            } while (fin);
+
+            fout.clear();
+            fout.seekp(next*sizeof(Vertiba)-2*sizeof(Vertiba));
+            c_n=next; next=0;
+            writeRecord(fout);
+            next=c_n;
         };
 };
 ostream& operator<<(ostream &f, Vertiba &v) {
-    f << "Year: " << v.year << " Month: " << v.month << " Day: " << v.day << endl;
+    f << "Year: " << v.year << " Month: " << v.month << " Day: " << v.day << " Next: " << v.next << endl;
 };
 
 int main() {
     ofstream fout1("vertibas.bin", ios::binary);
     ifstream fin1("vertibas.bin", ios::binary);
+    fstream f;
 
     Vertiba date;
     date.createFile(cin, fout1);
+
+    //date.appendData(cin, fout1);
     fout1.close();
 
     // Fiziska secība
-    cout << "Fiziska seciba: " << endl;
+    cout << endl <<  "Fiziska seciba: " << endl;
     while (date.readRecord(fin1)) {
         cout << date;
     }
     fin1.close();
 
     // Loģiska secība
-    cout << "Logiska seciba: " << endl;
+    cout << endl << "Logiska seciba: " << endl;
     fin1.open("vertibas.bin", ios::binary);
     date.LogicalRecord(fin1);
+
     fin1.close();
 
     return 0;
