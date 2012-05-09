@@ -31,7 +31,7 @@ class moneyData {
                 reg->money = m;
                 reg->id = regId;
             } else {
-                List *p=regf, *pbf;
+                List *p=regf, *pbf=NULL;
                 while (p!=NULL) {
                     if (m < p->money) {
                         if (p==regf) {
