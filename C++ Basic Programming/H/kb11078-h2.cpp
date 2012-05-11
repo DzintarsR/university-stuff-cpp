@@ -22,12 +22,10 @@ class Vertiba {
     private:
         int year, month, day;
         int next;
-        printSort *glList;
     public:
         friend ostream& operator<<(ostream &f, Vertiba &v);
         Vertiba(int y=0, int m=0, int d=0, int n=1) {
             year = y; month = m; day = d; next = n;
-            glList = new printSort();
         };
         void writeRecord(ostream &f) {
             f.write((char*)this, sizeof(Vertiba));
@@ -52,9 +50,77 @@ class Vertiba {
 
             fout.clear();
             fout.seekp(next*sizeof(Vertiba)-2*sizeof(Vertiba));
-            c_n=next; next=0;
+            c_n=next; next=-1;
             writeRecord(fout);
             next=c_n;
+
+            // sort and reNext
+            int date;
+            printSort *p = new printSort;
+            printSort *a, *r, *g, *pf=p;
+
+            // Sakārto sarakstu pēc loģiskiem datumiem
+            ifstream f("vertibas.bin", ios::binary);
+            f.open("vertibas.bin", ios::binary);
+            f.clear(); f.seekg(0);
+            while (readRecord(f)) {
+                a=p; r=NULL; date = getDateVal();
+
+                while (a!=NULL) {
+                    g=a;
+                    if (a->size==0) break;
+                    else if (date < a->size) { r=a; break; }
+                    a = a->next;
+                }
+
+                if (r==NULL) {
+                    if (a==p && a->size==0) a->size = date;
+                    else g->next = new printSort(date);
+                } else {
+                    printSort *d=p, *bf;
+                    while (d!=NULL) {
+                        if (d==r) {
+                            if (d==p) {
+                                p = new printSort(date); p->next = r;
+                                break;
+                            } else bf->next = new printSort(date); bf->next->next = d;
+                        }
+                        bf = d; d = d->next;
+                    }
+                }
+            }
+
+            bool mCheck[next];
+            for (int i=0; i<next; i++) mCheck[i]=true;
+
+            // Sakārto norādes bin. failā loģiskā secībā
+            f.clear(); f.seekg(0); int i=1; int ncount;
+            while (p!=NULL) {
+                i++;
+                f.clear(); f.seekg(0);
+                ncount=0;
+                while (readRecord(f)) {
+                    if (mCheck[ncount]) {
+                        if (p->size == getDateVal()) {
+                            mCheck[ncount]=false;
+                            fout.seekp(ncount*sizeof(Vertiba));
+                            if (p->next!=NULL) next=i;
+                            else next=0;
+                            writeRecord(fout);
+                            break;
+                        }
+                    }
+                    ncount++;
+                }
+                p = p->next;
+            }
+            f.close();
+
+            while(pf!=NULL) {
+                a=pf;
+                pf=pf->next;
+                delete a;
+            }
         };
         bool longYear(int y) {
             int s=y;
@@ -71,75 +137,21 @@ class Vertiba {
             for (int i=0; i<year; i++) years += (longYear(i) ? 366 : 365);
             return years+days+day;
         };
-        void changeNext() {
-            ifstream f("vertibas.bin", ios::binary);
-            f.open("vertibas.bin", ios::binary);
-            f.clear(); f.seekg(0);
-
-            int date;
-            printSort *p = glList, *reg;
-            printSort *a, *r, *g, *pf=p;
-
-            // Sakārto sarakstu pēc loģiskiem datumiem
-            while (readRecord(f)) {
-                date = getDateVal();
-                if (glList->size == 0) {
-                    glList->size = date;
-                } else {
-                    printSort *p=glList, *pbf=NULL;
-                    while (p!=NULL) {
-                        if (date < p->size) {
-                            if (p==glList) {
-                                reg = new printSort(date);
-                                reg->next = glList;
-                                glList=reg;
-                            } else {
-                                pbf->next = new printSort(date);
-                                pbf->next->next = p;
-                            }
-                            break;
-                        }
-                        else if (date == p->size && (p->next!=NULL && p->next->size != p->size)) {
-                            printSort *s=p->next;
-                            p->next = new printSort(date);
-                            p->next->next = s;
-                            break;
-                        }
-                        else if (p->next == NULL) {
-                            p->next = new printSort(date);
-                            break;
-                        }
-                        pbf=p;
-                        p=p->next;
-                    }
-                }
-            }
-            f.close();
-
-            printSort *pe = glList;
-            while (pe!=NULL) {
-                cout << pe->size << endl;
-                pe=pe->next;
-            }
-
-
-            //ofstream fout1("vertibas.bin", ios::binary);
-            // samaina next
-            //fout1.close();
-        };
-
         void LogicalRecord(istream &f) {
-            printSort *p = glList;
             // Izvada datumus loģiskā sakārtojumā
-            f.clear(); f.seekg(0);
-            while (p!=NULL) {
-                f.clear(); f.seekg(0);
-                while (readRecord(f)) {
-                    if (p->size == getDateVal()) {
-                        cout << *this; break;
-                    }
+            f.clear(); f.seekg(0); int n=2;
+            while (readRecord(f)) {
+                if (n == next) {
+                    cout << *this;
+                    f.clear(); f.seekg(0);
+                    n++;
                 }
-                p = p->next;
+            }
+            f.clear(); f.seekg(0);
+            while (readRecord(f)) {
+                if (next==0) {
+                    cout << *this; break;
+                }
             }
         };
 
@@ -172,21 +184,20 @@ class Vertiba {
         };
 };
 ostream& operator<<(ostream &f, Vertiba &v) {
+    if (v.next==0) v.next++;
     f << "Year: " << v.year << " Month: " << v.month << " Day: " << v.day << " Next: " << v.next << endl;
 };
 
 int main() {
     ofstream fout1("vertibas.bin", ios::binary);
     ifstream fin1("vertibas.bin", ios::binary);
+    fstream f;
 
     Vertiba date;
     date.createFile(cin, fout1);
 
     //date.appendData(cin, fout1);
     fout1.close();
-
-    // Sakarto pieaugosa seciba
-    date.changeNext();
 
     // Fiziska secība
     cout << endl <<  "Fiziska seciba: " << endl;
@@ -199,6 +210,7 @@ int main() {
     cout << endl << "Logiska seciba: " << endl;
     fin1.open("vertibas.bin", ios::binary);
     date.LogicalRecord(fin1);
+
     fin1.close();
 
     return 0;
