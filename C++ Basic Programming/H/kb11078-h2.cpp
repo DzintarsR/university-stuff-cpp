@@ -103,7 +103,7 @@ class Vertiba {
                     if (mCheck[ncount]) {
                         if (p->size == getDateVal()) {
                             mCheck[ncount]=false;
-                            fout.seekp(ncount*sizeof(Vertiba));
+                            fout.clear(); fout.seekp(ncount*sizeof(Vertiba));
                             if (p->next!=NULL) next=i;
                             else next=0;
                             writeRecord(fout);
@@ -139,9 +139,10 @@ class Vertiba {
         };
         void LogicalRecord(istream &f) {
             // Izvada datumus loģiskā sakārtojumā
-            f.clear(); f.seekg(0); int n=2;
+            f.clear(); f.seekg(0); int n=2, i=0;
             while (readRecord(f)) {
                 if (n == next) {
+                    cout << ++i << ") ";
                     cout << *this;
                     f.clear(); f.seekg(0);
                     n++;
@@ -150,11 +151,11 @@ class Vertiba {
             f.clear(); f.seekg(0);
             while (readRecord(f)) {
                 if (next==0) {
+                    cout << ++i << ") ";
                     cout << *this; break;
                 }
             }
         };
-
         void appendData(istream &fin=cin, ostream &fout=cout) {
             cin.clear();
             cin.ignore();
@@ -178,14 +179,14 @@ class Vertiba {
 
             fout.clear();
             fout.seekp(next*sizeof(Vertiba)-2*sizeof(Vertiba));
-            c_n=next; next=0;
+            c_n=next; next=-1;
             writeRecord(fout);
             next=c_n;
         };
 };
 ostream& operator<<(ostream &f, Vertiba &v) {
     if (v.next==0) v.next++;
-    f << "Year: " << v.year << " Month: " << v.month << " Day: " << v.day << " Next: " << v.next << endl;
+    f << "Year: " << v.year << " Month: " << v.month << " Day: " << v.day << " | Next: " << v.next << endl;
 };
 
 int main() {
@@ -200,8 +201,10 @@ int main() {
     fout1.close();
 
     // Fiziska secība
+    int i=0;
     cout << endl <<  "Fiziska seciba: " << endl;
     while (date.readRecord(fin1)) {
+        cout << ++i << ") ";
         cout << date;
     }
     fin1.close();
