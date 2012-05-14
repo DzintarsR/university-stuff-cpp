@@ -134,5 +134,7 @@ int main() {
         }
 	}
 
+    fclose(inputFile);
+    fclose(outputFile);
 	return 0;
 }
