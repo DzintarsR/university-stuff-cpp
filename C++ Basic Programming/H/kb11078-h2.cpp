@@ -57,7 +57,6 @@ class Vertiba {
 
         };
         void reNext(istream &fin=cin, ostream &fout=cout) {
-            // sort and reNext
             int date;
             printSort *p = new printSort;
             printSort *a, *r, *g, *pf=p;
@@ -65,9 +64,6 @@ class Vertiba {
             // Sakārto sarakstu pēc loģiskiem datumiem
             ifstream f("vertibas.bin", ios::binary);
             f.open("vertibas.bin", ios::binary);
-
-            //ofstream fout("vertibas.bin", ios::binary);
-            //fout.open("vertibas.bin", ios::binary);
 
             f.clear(); f.seekg(0);
             while (readRecord(f)) {
@@ -109,7 +105,6 @@ class Vertiba {
                 while (readRecord(f)) {
                     if (mCheck[ncount]) {
                         if (p->size == getDateVal()) {
-                            cout << p->size << endl;
                             mCheck[ncount]=false;
                             fout.clear(); fout.seekp(ncount*sizeof(Vertiba));
                             if (p->next!=NULL) next=i;
@@ -204,7 +199,7 @@ int main() {
     Vertiba date;
     date.createFile(cin, fout1);
 
-    date.appendData(cin, fout1);
+    //date.appendData(cin, fout1);
     date.reNext(cin, fout1);
     fout1.close();
 
