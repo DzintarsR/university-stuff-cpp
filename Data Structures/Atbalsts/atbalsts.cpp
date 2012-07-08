@@ -91,7 +91,7 @@ int main() {
     FILE* inputFile;
     FILE* outputFile;
 
-    inputFile = fopen("atbalsts.in", "r");
+    inputFile = fopen("atbalsts.in1000", "r");
     //inputFile = fopen("unix-tests/atbalsts.i1", "r");
 	outputFile = fopen("atbalsts.out", "w+");
 
