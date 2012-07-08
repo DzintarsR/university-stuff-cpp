@@ -1,2 +1,1 @@
-university-stuff-cpp
-===================
+C++ tasks for university
