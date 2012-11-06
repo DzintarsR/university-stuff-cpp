@@ -44,8 +44,8 @@ class Marss {
                     findInOrder(x, p->left);
                 }
 
-                if (p->val != x && favourites[1] == 0) favourites[0] = p->val;
-                else if (p->val == x) favourites[1] = x;
+                if (p->val == x) favourites[1] = x;
+                else if (p->val != x && favourites[1] == 0) favourites[0] = p->val;
                 else if (favourites[1] != 0 && favourites[2] == 0) {
                     favourites[2] = p->val;
                     continueRecursion = false;
