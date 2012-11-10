@@ -35,8 +35,21 @@ class Marss {
             for (int i=0; i<3; i++) favourites[i] = 0;
         };
 
+        // delete all nodes from tree and free memory
+        void deleteTree(struct Node *p) {
+            if(p) {
+                if(p->left) deleteTree(p->left);
+                if(p->right) deleteTree(p->right);
+                //fprintf(stdout, "Deleting node with value: %d\n", p->val);
+                delete(p);
+            }
+        };
+
         // destruct
-        ~Marss() {};
+        ~Marss() {
+            deleteTree(first);
+            //fprintf(stdout, "\nTree has been deleted!\n");
+        };
 
         void findInOrder(int x, Node *p) {
             if (continueRecursion) {
@@ -181,5 +194,7 @@ int main() {
 
     fclose(inputFile);
     fclose(outputFile);
+
+    marss->~Marss();
 	return 0;
 }
