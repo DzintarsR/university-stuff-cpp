@@ -19,8 +19,7 @@ struct Node {
 
 class Marss {
     private:
-        //Node *first, *current;
-        Node *findLeafNode, *first, *current;
+        Node *findLeafNode, *first;
         FILE *file;
         int favourites[3];
         bool continueRecursion;
@@ -28,7 +27,7 @@ class Marss {
         // construct
         Marss(FILE *f) {
             file = f;
-            first = current = new Node;
+            first = new Node;
             findLeafNode = NULL;
             continueRecursion = true;
 
