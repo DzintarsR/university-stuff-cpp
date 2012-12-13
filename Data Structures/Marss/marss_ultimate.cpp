@@ -2,6 +2,8 @@
 #include "stdio.h"
 #include "stdlib.h"
 
+#define MARSIONS 10000
+
 struct Node {
     int val;
     Node *left;
@@ -19,7 +21,7 @@ struct Node {
 
 class Marss {
     private:
-        Node *findLeafNode, *first;
+        Node *first, *marsionArray[MARSIONS+1];
         FILE *file;
         int favourites[3];
         bool continueRecursion;
@@ -28,10 +30,10 @@ class Marss {
         Marss(FILE *f) {
             file = f;
             first = new Node;
-            findLeafNode = NULL;
             continueRecursion = true;
 
             for (int i=0; i<3; i++) favourites[i] = 0;
+            for (int i=1; i<=MARSIONS; i++) marsionArray[i] = NULL;
         };
 
         // delete all nodes from tree and free memory
@@ -39,7 +41,6 @@ class Marss {
             if(p) {
                 if(p->left) deleteTree(p->left);
                 if(p->right) deleteTree(p->right);
-                //fprintf(stdout, "Deleting node with value: %d\n", p->val);
                 delete(p);
             }
         };
@@ -47,10 +48,9 @@ class Marss {
         // destruct
         ~Marss() {
             deleteTree(first);
-            //fprintf(stdout, "\nTree has been deleted!\n");
         };
 
-        void findInOrder(int x, Node *p) {
+        void findInOrder(int x, struct Node *p) {
             if (continueRecursion) {
                 if (p->left != NULL) {
                     findInOrder(x, p->left);
@@ -71,59 +71,36 @@ class Marss {
 
         // print error message
         void printError(int x) {
-            char e0[] = "error0";
-            char e1[] = "error1";
-            char e2[] = "error2";
-            char e3[] = "error3";
-            char e4[] = "error4";
-            char e5[] = "error5";
-            switch (x) {
-                case 0: fprintf(file, "%s\n", e0); break;
-                case 1: fprintf(file, "%s\n", e1); break;
-                case 2: fprintf(file, "%s\n", e2); break;
-                case 3: fprintf(file, "%s\n", e3); break;
-                case 4: fprintf(file, "%s\n", e4); break;
-                case 5: fprintf(file, "%s\n", e5); break;
-            }
+            fprintf(file, "error%d\n", x);
         };
 
         // set first martian
         void setMainMartian(int x) {
             first->val = x;
+            marsionArray[x] = first;
         };
 
-        // find leaf and return its adress
-        void findLeaf(int x, Node *p) {
-            if (findLeafNode == NULL) {
-                if (p->val == x) findLeafNode = p;
-                else {
-                    if (p->left != NULL) findLeaf(x, p->left);
-                    if (p->right != NULL) findLeaf(x, p->right);
-                }
-            }
-        };
-
-        // set right marsion
+        // set marsion: leaf (1->left, 0->right)
         void setMarsion(int marsion, int childValue, int leaf) {
-            // leaf (1->left, 0->right)
-
             // check if child already exists
-            findLeaf(childValue, first);
-            if (findLeafNode != NULL) {
+            if (marsionArray[childValue] != NULL) {
                 // If child exists error3
                 printError(3);
             } else {
                 // look for marsion, if find set, if not, print error
-                findLeaf(marsion, first);
-                if (findLeafNode != NULL) {
+                Node *marsionNode;
+                marsionNode = marsionArray[marsion];
+                if (marsionNode != NULL) {
                     switch (leaf) {
                         case 1:
-                            if (findLeafNode->left == NULL) findLeafNode->left = new Node(childValue);
+                            if (marsionNode->left == NULL)
+                                 marsionArray[childValue] = marsionNode->left = new Node(childValue);
                             // If left child exists error4
                             else printError(4);
                             break;
                         case 0:
-                            if (findLeafNode->right == NULL) findLeafNode->right = new Node(childValue);
+                            if (marsionNode->right == NULL)
+                                marsionArray[childValue] = marsionNode->right = new Node(childValue);
                             // If right child exists error5
                             else printError(5);
                             break;
@@ -131,8 +108,6 @@ class Marss {
                 // If marsion doesnt exists error2
                 } else printError(2);
             }
-
-            findLeafNode = NULL;
         };
 
         void printMarsionFavourites() {
@@ -197,3 +172,4 @@ int main() {
     marss->~Marss();
 	return 0;
 }
+
