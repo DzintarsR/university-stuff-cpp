@@ -20,7 +20,7 @@ struct Pse {
 
 struct Rec {
     char name[101];
-    Pse *pse[50];
+    long int pse[50];
     int count;
 
     Rec *next;
@@ -83,6 +83,19 @@ class Recenzenti {
             }
         };
 
+        /** Find pseido node by id and return its pointer - node is always existing */
+        Pse* lookUpForPse(int pseId, Pse *pseNode) {
+            if (pseId == pseNode->id) {
+                return pseNode;
+            } else {
+                if (pseId < pseNode->id) {
+                    return lookUpForPse(pseId, pseNode->left);
+                } else {
+                    return lookUpForPse(pseId, pseNode->right);
+                }
+            }
+        };
+
         /** Find rec by name and returns its pointer */
         Rec* findRecByName(char *n) {
             if (firstRecNode == NULL) {
@@ -108,10 +121,10 @@ class Recenzenti {
         };
 
         /** Insert pseido node in pseido binary tree */
-        Pse* insertPseNode(Rec *rec, int id) {
+        long int insertPseNode(Rec *rec, int id) {
             if (firstPseNode == NULL) {
                 firstPseNode = new Pse(id, rec);
-                return firstPseNode;
+                return firstPseNode->id;
             }
 
             Pse *pse = firstPseNode;
@@ -120,13 +133,13 @@ class Recenzenti {
                 if (id < pse->id) {
                     if (pse->left == NULL) {
                         pse->left = new Pse(id, rec);
-                        return pse->left;
+                        return pse->left->id;
                     }
                     pse = pse->left;
                 } else {
                     if (pse->right == NULL) {
                         pse->right = new Pse(id, rec);
-                        return pse->right;
+                        return pse->right->id;
                     }
                     pse = pse->right;
                 }
@@ -135,13 +148,14 @@ class Recenzenti {
 
         /** Find and deletes all pse nodes by using rec pse node array and then deletes rec list element */
         void invokeDelete(Rec *rec) {
-            Pse **pIds = rec->pse;
+            long int *pIds = rec->pse;
             for (int i=0; i<50; i++) {
                 if (pIds[i] != NULL) {
                     deletePseNode(pIds[i]);
                 }
             }
 
+            /*
             if (rec->prev != NULL) {
                 rec->prev->next = rec->next;
                 if (rec->next != NULL) {
@@ -152,21 +166,45 @@ class Recenzenti {
                 firstRecNode->prev = NULL;
             }
             delete rec;
+            */
         };
 
-        void deletePseNode(Pse *p) {
-            if (p->right == NULL) {
+        void deletePseNode(int pseidoId) {
+            Pse *p = lookUpForPse(pseidoId, firstPseNode);
+
+            if (p->right == NULL && p->left == NULL) {
                 delete p;
-                //p = p->left;
-            } else {
+            }
+
+            else if (p->right == NULL && p->left != NULL) {
+                p->id = p->left->id;
+                p->rec = p->left->rec;
+                p->left = p->left->left;
+                p->right = p->left->right;
+            }
+
+            else if (p->left == NULL && p->right != NULL) {
+                p->id = p->right->id;
+                p->rec = p->right->rec;
+                p->left = p->right->left;
+                p->right = p->right->right;
+            }
+
+            else if (p->left != NULL && p->right != NULL) {
                 Pse *q = p->right;
                 while (q->left != NULL) {
                     q = q->left;
                 }
-                p = q;
-                q = q->right;
-                q->left = p->left;
-                q->right = p->right;
+
+                p->id = q->id;
+                p->rec = q->rec;
+
+                if (q->right != NULL) {
+                    q->id = q->right->id;
+                    q->rec = q->right->rec;
+                    q->right = q->right->right;
+                    q->left = q->right->left;
+                }
             }
         };
 };
@@ -230,7 +268,7 @@ int main() {
 
                 for (int i=0; i<50; i++) {
                     if (givenKeys[i] != 0)  {
-                        r2->pse[r2->count++] =  recenzenti->insertPseNode(r2, givenKeys[i]);
+                        r2->pse[r2->count++] = recenzenti->insertPseNode(r2, givenKeys[i]);
                     }
                 }
 

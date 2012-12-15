@@ -1,11 +1,12 @@
-I JackSmart 3 9 1009 1000009
-L 1000009
-I TedPumpkinhead 1 19
-I PeterMeter 1 9
-L 19
-D 19
-L 19
-I JohnCritic 2 1 19
-L 19
-L 1
-L 9
+I JackSmart 5 17 27 37 47 57
+L 17
+L 27
+L 37
+L 47
+L 57
+D 37
+L 17
+L 27
+L 37
+L 47
+L 57
