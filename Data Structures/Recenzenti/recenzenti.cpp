@@ -38,8 +38,8 @@ struct Rec {
 class Recenzenti {
     private:
         FILE *file;
-        Rec *firstRecNode;
     public:
+        Rec *firstRecNode;
         Pse *firstPseNode;
 
         /** construct */
@@ -143,7 +143,7 @@ class Recenzenti {
             }
 
             if (rec->prev != NULL) {
-                rec->prev = rec->next;
+                rec->prev->next = rec->next;
                 if (rec->next != NULL) {
                     rec->next->prev = rec->prev;
                 }
@@ -155,8 +155,9 @@ class Recenzenti {
         };
 
         void deletePseNode(Pse *p) {
-            if (p->right == NULL ) {
-                p = p->left;
+            if (p->right == NULL) {
+                delete p;
+                //p = p->left;
             } else {
                 Pse *q = p->right;
                 while (q->left != NULL) {
@@ -229,8 +230,7 @@ int main() {
 
                 for (int i=0; i<50; i++) {
                     if (givenKeys[i] != 0)  {
-                        r2->pse[r2->count] =  recenzenti->insertPseNode(r2, givenKeys[i]);
-                        r2->count++;
+                        r2->pse[r2->count++] =  recenzenti->insertPseNode(r2, givenKeys[i]);
                     }
                 }
 
@@ -248,7 +248,12 @@ int main() {
         }
         else if (command[0] == 'L') {
             fscanf(inputFile, "%d", &pseidoId);
-            recenzenti->printRecName(recenzenti->lookUp(pseidoId, recenzenti->firstPseNode)->name);
+            Rec *r = recenzenti->lookUp(pseidoId, recenzenti->firstPseNode);
+            if (r == NULL) {
+                recenzenti->printNo();
+            } else {
+                recenzenti->printRecName(r->name);
+            }
         }
     }
 
