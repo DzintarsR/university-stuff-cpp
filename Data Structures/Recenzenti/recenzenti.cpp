@@ -105,7 +105,7 @@ class Recenzenti {
             }
 
             Rec *r = firstRecNode;
-            Rec *save;
+            Rec *save = NULL;
             while (r != NULL) {
                 if (strcmp(r->name, n) == 0) {
                     return r;
@@ -116,9 +116,12 @@ class Recenzenti {
                 r = r->next;
             }
 
-            save->next = new Rec(n);
-            save->next->prev = save;
-            return save->next;
+            if (save != NULL) {
+                save->next = new Rec(n);
+                save->next->prev = save;
+                return save->next;
+            }
+            return NULL;
         };
 
         /** Insert pseido node in pseido binary tree */
@@ -145,6 +148,8 @@ class Recenzenti {
                     pse = pse->right;
                 }
             }
+
+            return 0;
         };
 
         /** Find and deletes all pse nodes by using rec pse node array and then deletes rec list element */
@@ -299,6 +304,31 @@ int main() {
 
             if (!existingKey) {
                 Rec *r2 = recenzenti->findRecByName(name);
+                int countOfAddelements = 0;
+                bool found = false;
+
+                /** Remove existing values and count add elements */
+                for (int i=0; i<50; i++) {
+                    if (givenKeys[i] == 0) break;
+
+                    for (int j=0; j<50; j++) {
+                        if (givenKeys[i] == r2->pse[j]) {
+                            givenKeys[i] = 0;
+                            found = true;
+                            break;
+                        }
+                    }
+
+                    if (!found) {
+                        countOfAddelements++;
+                        found = false;
+                    }
+                }
+
+                if (r2->count+countOfAddelements > 49) {
+                    recenzenti->printNo();
+                    continue;
+                }
 
                 for (int i=0; i<50; i++) {
                     if (givenKeys[i] != 0)  {
