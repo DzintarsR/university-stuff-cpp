@@ -7,14 +7,15 @@ struct Rec;
 
 struct Pse {
     long int id;
-    Pse *left, *right;
+    Pse *left, *right, *parent;
     Rec *rec;
 
-    Pse(int x, Rec *r) {
+    Pse(int x, Rec *r, Pse *pa) {
         id = x;
         rec = r;
         left = NULL;
         right = NULL;
+        parent = pa;
     };
 };
 
@@ -31,7 +32,7 @@ struct Rec {
         count = 0;
         next = NULL;
         prev = NULL;
-        for (int i=0; i<50; i++) pse[i] = NULL;
+        for (int i=0; i<50; i++) pse[i] = 0;
     }
 };
 
@@ -123,7 +124,7 @@ class Recenzenti {
         /** Insert pseido node in pseido binary tree */
         long int insertPseNode(Rec *rec, int id) {
             if (firstPseNode == NULL) {
-                firstPseNode = new Pse(id, rec);
+                firstPseNode = new Pse(id, rec, NULL);
                 return firstPseNode->id;
             }
 
@@ -132,13 +133,13 @@ class Recenzenti {
             while (pse != NULL) {
                 if (id < pse->id) {
                     if (pse->left == NULL) {
-                        pse->left = new Pse(id, rec);
+                        pse->left = new Pse(id, rec, pse);
                         return pse->left->id;
                     }
                     pse = pse->left;
                 } else {
                     if (pse->right == NULL) {
-                        pse->right = new Pse(id, rec);
+                        pse->right = new Pse(id, rec, pse);
                         return pse->right->id;
                     }
                     pse = pse->right;
@@ -150,12 +151,11 @@ class Recenzenti {
         void invokeDelete(Rec *rec) {
             long int *pIds = rec->pse;
             for (int i=0; i<50; i++) {
-                if (pIds[i] != NULL) {
+                if (pIds[i] != 0) {
                     deletePseNode(pIds[i]);
                 }
             }
 
-            /*
             if (rec->prev != NULL) {
                 rec->prev->next = rec->next;
                 if (rec->next != NULL) {
@@ -163,31 +163,58 @@ class Recenzenti {
                 }
             } else {
                 firstRecNode = rec->next;
-                firstRecNode->prev = NULL;
+                if (firstRecNode != NULL) {
+                    firstRecNode->prev = NULL;
+                }
             }
             delete rec;
-            */
         };
 
+        /** Delete single pse node from tree */
         void deletePseNode(int pseidoId) {
             Pse *p = lookUpForPse(pseidoId, firstPseNode);
 
             if (p->right == NULL && p->left == NULL) {
+                if (p->parent == NULL) {
+                    firstPseNode = NULL;
+                }
+
+                else if (p->parent->id > p->id) {
+                    p->parent->left = NULL;
+                } else {
+                    p->parent->right = NULL;
+                }
                 delete p;
             }
 
             else if (p->right == NULL && p->left != NULL) {
-                p->id = p->left->id;
-                p->rec = p->left->rec;
-                p->left = p->left->left;
-                p->right = p->left->right;
+                if (p->parent == NULL) {
+                    firstPseNode = p->left;
+                }
+
+                else if (p->parent->id > p->id) {
+                    p->parent->left = p->left;
+                } else {
+                    p->parent->right = p->left;
+                }
+
+                p->left->parent = p->parent;
+                delete p;
             }
 
             else if (p->left == NULL && p->right != NULL) {
-                p->id = p->right->id;
-                p->rec = p->right->rec;
-                p->left = p->right->left;
-                p->right = p->right->right;
+                if (p->parent == NULL) {
+                    firstPseNode = p->right;
+                }
+
+                else if (p->parent->id > p->id) {
+                    p->parent->left = p->right;
+                } else {
+                    p->parent->right = p->right;
+                }
+
+                p->right->parent = p->parent;
+                delete p;
             }
 
             else if (p->left != NULL && p->right != NULL) {
@@ -195,16 +222,23 @@ class Recenzenti {
                 while (q->left != NULL) {
                     q = q->left;
                 }
+                Pse *qSave = q;
 
-                p->id = q->id;
-                p->rec = q->rec;
-
-                if (q->right != NULL) {
-                    q->id = q->right->id;
-                    q->rec = q->right->rec;
-                    q->right = q->right->right;
-                    q->left = q->right->left;
+                q->parent = p->parent;
+                if (p->parent != NULL) {
+                    if (p->parent->id > p->id) {
+                        p->parent->left = q;
+                    } else {
+                        p->parent->right = q;
+                    }
                 }
+                q->left = p->left;
+                if (p->right != q) {
+                    q->right = p->right;
+                    qSave->parent->left = q->right;
+                }
+
+                delete p;
             }
         };
 };
@@ -240,8 +274,8 @@ int main() {
             for (int i=0; i<pseidoCount; i++) {
                 fscanf(inputFile, "%d", &pseidoId);
 
-                for (int i=0; i<50; i++) {
-                    if (givenKeys[i] == pseidoId) {
+                for (int j=0; j<50; j++) {
+                    if (givenKeys[j] == pseidoId) {
                         alreadyKeyInarray = true;
                         break;
                     }
