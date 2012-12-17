@@ -327,6 +327,7 @@ int main() {
             }
         }
         else if (command[0] == 'D') {
+            fscanf(inputFile, "%d", &pseidoId);
             Rec *p = recenzenti->lookUp(pseidoId, recenzenti->firstPseNode);
             if (p == NULL) {
                 recenzenti->printNo();
