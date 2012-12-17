@@ -221,6 +221,9 @@ class Recenzenti {
                     } else {
                         p->parent->right = q;
                     }
+                } else {
+                    q->parent = NULL;
+                    firstPseNode = q;
                 }
                 q->left = p->left;
                 if (p->right != q) {
