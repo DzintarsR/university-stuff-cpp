@@ -21,7 +21,7 @@ struct Pse {
 
 struct Rec {
     char name[101];
-    long int pse[50];
+    Pse *pse[50];
     int count;
 
     Rec *next;
@@ -32,7 +32,7 @@ struct Rec {
         count = 0;
         next = NULL;
         prev = NULL;
-        for (int i=0; i<50; i++) pse[i] = 0;
+        for (int i=0; i<50; i++) pse[i] = NULL;
     }
 };
 
@@ -84,19 +84,6 @@ class Recenzenti {
             }
         };
 
-        /** Find pseido node by id and return its pointer - node is always existing */
-        Pse* lookUpForPse(int pseId, Pse *pseNode) {
-            if (pseId == pseNode->id) {
-                return pseNode;
-            } else {
-                if (pseId < pseNode->id) {
-                    return lookUpForPse(pseId, pseNode->left);
-                } else {
-                    return lookUpForPse(pseId, pseNode->right);
-                }
-            }
-        };
-
         /** Find rec by name and returns its pointer */
         Rec* findRecByName(char *n) {
             if (firstRecNode == NULL) {
@@ -125,10 +112,10 @@ class Recenzenti {
         };
 
         /** Insert pseido node in pseido binary tree */
-        long int insertPseNode(Rec *rec, int id) {
+        Pse* insertPseNode(Rec *rec, int id) {
             if (firstPseNode == NULL) {
                 firstPseNode = new Pse(id, rec, NULL);
-                return firstPseNode->id;
+                return firstPseNode;
             }
 
             Pse *pse = firstPseNode;
@@ -137,26 +124,26 @@ class Recenzenti {
                 if (id < pse->id) {
                     if (pse->left == NULL) {
                         pse->left = new Pse(id, rec, pse);
-                        return pse->left->id;
+                        return pse->left;
                     }
                     pse = pse->left;
                 } else {
                     if (pse->right == NULL) {
                         pse->right = new Pse(id, rec, pse);
-                        return pse->right->id;
+                        return pse->right;
                     }
                     pse = pse->right;
                 }
             }
 
-            return 0;
+            return NULL;
         };
 
         /** Find and deletes all pse nodes by using rec pse node array and then deletes rec list element */
         void invokeDelete(Rec *rec) {
-            long int *pIds = rec->pse;
+            Pse **pIds = rec->pse;
             for (int i=0; i<50; i++) {
-                if (pIds[i] != 0) {
+                if (pIds[i] != NULL) {
                     deletePseNode(pIds[i]);
                 }
             }
@@ -176,9 +163,7 @@ class Recenzenti {
         };
 
         /** Delete single pse node from tree */
-        void deletePseNode(int pseidoId) {
-            Pse *p = lookUpForPse(pseidoId, firstPseNode);
-
+        void deletePseNode(Pse *p) {
             if (p->right == NULL && p->left == NULL) {
                 if (p->parent == NULL) {
                     firstPseNode = NULL;
@@ -270,7 +255,7 @@ int main() {
         if (check==EOF) break;
 
         if (command[0] == 'I') {
-            // Reset holder data
+            /** Reset holder data */
             for (int i=0; i<50; i++) givenKeys[i] = 0;
             existingKey = false;
 
@@ -312,7 +297,9 @@ int main() {
                     if (givenKeys[i] == 0) break;
 
                     for (int j=0; j<50; j++) {
-                        if (givenKeys[i] == r2->pse[j]) {
+                        if (r2->pse[j] == NULL) continue;
+
+                        if (givenKeys[i] == r2->pse[j]->id) {
                             givenKeys[i] = 0;
                             found = true;
                             break;
