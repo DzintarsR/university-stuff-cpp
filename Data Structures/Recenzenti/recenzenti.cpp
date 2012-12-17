@@ -222,13 +222,12 @@ class Recenzenti {
                         p->parent->right = q;
                     }
                 } else {
-                    q->parent = NULL;
                     firstPseNode = q;
                 }
                 q->left = p->left;
                 if (p->right != q) {
                     q->right = p->right;
-                    qSave->parent->left = q->right;
+                    qSave->parent->left = qSave->right;
                 }
 
                 delete p;
