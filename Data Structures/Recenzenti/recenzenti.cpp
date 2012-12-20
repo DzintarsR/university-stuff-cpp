@@ -250,7 +250,7 @@ int main() {
     int check, pseidoCount, pseidoId;
 
     bool existingKey = false, alreadyKeyInarray = false;
-    int givenKeys[50];
+    long int givenKeys[50];
 
     while (inputFile) {
 	    check = fscanf(inputFile, "%s", command);
