@@ -78,7 +78,7 @@ class Jubileja {
             char c1[62], c2[62];
             strcpy(c1, gs); strcat(c1, gn);
             strcpy(c2, cs); strcat(c2, cn);
-            return strcmp(c1, c2);
+            return strcmp(charToLowerCase(c1), charToLowerCase(c2));
         };
 
         /** insert new member */
@@ -104,7 +104,7 @@ class Jubileja {
                         break;
                     }
                     else if (p->next != NULL && year < p->next->year) {
-                        saveP = p;
+                        saveP = p->next;
                         p->next = new DateTime(day, month, year, name, surname, saveP);
                         saveP = NULL;
                         break;
@@ -127,7 +127,11 @@ class Jubileja {
                     }
 
                     else if (d > 0) {
-                        if (p->next != NULL && p->next->year != year) {
+                        if (p->next == NULL) {
+                            p->next = new DateTime(day, month, year, name, surname);
+                            break;
+                        }
+                        else if (p->next != NULL && p->next->year != year) {
                             saveP = p->next;
                             p->next = new DateTime(day, month, year, name, surname, saveP);
                             saveP = NULL;
@@ -146,9 +150,16 @@ class Jubileja {
             DateTime *p = NULL;
             int age, hold = 0;
             bool found = false;
+            int dayFrom = 0;
             for (int i=month; i<MONTH; i++) {
+                if (dayFrom == 0 && i == month) {
+                    dayFrom = day;
+                } else {
+                    dayFrom = 1;
+                }
+
                 if (datetimeList[i] != NULL) {
-                    for (int j=day; j<DAY; j++) {
+                    for (int j=dayFrom; j<DAY; j++) {
                         if (datetimeList[i][j] != NULL) {
                             p = datetimeList[i][j];
                             found = true;
@@ -159,13 +170,13 @@ class Jubileja {
                 }
 
                 // year is over and no birthdays was found - reset year
-                if (i == MONTH && p == NULL)  {
+                if (i == MONTH-1 && p == NULL)  {
                     i = 0;
                     hold++;
                 }
             }
 
-            fprintf(file, "%s%d.%s%d.%d\n", addExtraZero(p->day), p->day, addExtraZero(p->day), p->month, year+hold);
+            fprintf(file, "%s%d.%s%d.%d\n", addExtraZero(p->day), p->day, addExtraZero(p->month), p->month, year+hold);
             while (p != NULL) {
                 age = year - p->year + hold;
                 fprintf(file, "%d %s %s\n", age, p->name, p->surname);
