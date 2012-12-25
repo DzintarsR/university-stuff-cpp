@@ -17,7 +17,7 @@ struct DateTime {
     };
 
     DateTime(int d, int m, int y, char *na, char *su, DateTime *n=NULL) {
-        setDateTimeData(d, m, y, na, su, NULL);
+        setDateTimeData(d, m, y, na, su, n);
     };
 
     void setDateTimeData(int d, int m, int y, char *na, char *su, DateTime *n=NULL) {
@@ -74,13 +74,11 @@ class Jubileja {
         };
 
         /** first surname+name in alphabet */
-        int firstInAlphabet(char *gn, char *gs, char *cm, char *cs) {
-             gn = charToLowerCase(gn);
-             gs = charToLowerCase(gs);
-             cm = charToLowerCase(cm);
-             cs = charToLowerCase(cs);
-             int s = strcmp(gs, cs);
-             return s != 0 ? s : strcmp(gn, cm);
+        int firstInAlphabet(char *gn, char *gs, char *cn, char *cs) {
+            char c1[62], c2[62];
+            strcpy(c1, gs); strcat(c1, gn);
+            strcpy(c2, cs); strcat(c2, cn);
+            return strcmp(c1, c2);
         };
 
         /** insert new member */
@@ -147,15 +145,17 @@ class Jubileja {
         void findClosestBirthday(int day, int month, int year) {
             DateTime *p = NULL;
             int age, hold = 0;
+            bool found = false;
             for (int i=month; i<MONTH; i++) {
                 if (datetimeList[i] != NULL) {
                     for (int j=day; j<DAY; j++) {
                         if (datetimeList[i][j] != NULL) {
                             p = datetimeList[i][j];
+                            found = true;
                             break;
                         }
                     }
-                    break;
+                    if (found) break;
                 }
 
                 // year is over and no birthdays was found - reset year
@@ -165,9 +165,9 @@ class Jubileja {
                 }
             }
 
+            fprintf(file, "%s%d.%s%d.%d\n", addExtraZero(p->day), p->day, addExtraZero(p->day), p->month, year+hold);
             while (p != NULL) {
                 age = year - p->year + hold;
-                fprintf(file, "%s%d.%s%d.%d\n", addExtraZero(p->day), p->day, addExtraZero(p->day), p->month, year+hold);
                 fprintf(file, "%d %s %s\n", age, p->name, p->surname);
                 p = p->next;
             }
