@@ -55,9 +55,9 @@ int sort_tree(struct Person *first) {
             }
 
             // Check if has existing mother
-            // TODO: checkout vai mate nav viens otram
             if (position->mother_l > 0) {
                 if (strncmp(position->mother, current->name, current->name_l) == 0) {
+                    // Detects mother loop
                     if (strncmp(position->name, current->mother, position->name_l) == 0) {
                         write(1, "Mother loop\n", 13);
                         return 1;
@@ -67,9 +67,9 @@ int sort_tree(struct Person *first) {
             }
 
             // Check if has existing father
-            // TODO: checkout vai sencis nav viens otram
             if (position->father_l > 0) {
                 if (strncmp(position->father, current->name, current->name_l) == 0) {
+                    // Detects father loop
                     if (strncmp(position->name, current->father, position->name_l) == 0) {
                         write(1, "Father loop\n", 13);
                         return 1;
@@ -147,6 +147,7 @@ void sort_family(struct Person *person, int level, struct FamilyMember *family) 
         }
     }
 
+    // Add family member to linked list
     add_to_family_tree(family, person->name, person->name_l, level, person);
 
     Sibling_t *sib = person->first_sibling;
@@ -181,7 +182,12 @@ void print_tree(struct Person *first) {
 
     while (first != NULL) {
         Family_t *family = malloc(sizeof(struct FamilyMember));
+
+        // Sort family with level and store as linked list
         sort_family(first, 0, family);
+
+        // Retrieve deepest family tree level or -1 if
+        // if all family members has been already printed
         int level = get_deepest_level(family);
 
         if (level != -1) {
@@ -189,6 +195,7 @@ void print_tree(struct Person *first) {
                 write(1, "\n", 2);
             }
 
+            // Print family members by level [n...0]
             while (level >= 0) {
                 Family_t *f = family;
                 while (f != NULL) {
@@ -220,6 +227,7 @@ int main() {
 
     first = malloc(sizeof(struct Person));
 
+    // Process and store stdin data
     while((n = read(0, buffer, sizeof(buffer))) != 0) {
         if (n == 1) continue;
 
