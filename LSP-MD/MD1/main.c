@@ -18,11 +18,10 @@ struct Person {
     int name_l;
     int mother_l;
     int father_l;
+    int been_printed;
 
     struct Person *fatherPerson;
     struct Person *motherPerson;
-
-    int been_printed;
 
     struct Person *next;
     struct Sibling *first_sibling;
@@ -30,7 +29,18 @@ struct Person {
 
 typedef struct Person Person_t;
 
-void sort_tree(struct Person *first) {
+struct FamilyMember {
+    char name[MAX_BUFFER];
+    int name_l;
+    int level;
+
+    struct FamilyMember *next;
+    struct Person *person;
+};
+
+typedef struct FamilyMember Family_t;
+
+int sort_tree(struct Person *first) {
     Person_t *current, *position;
     position = first;
 
@@ -45,20 +55,42 @@ void sort_tree(struct Person *first) {
             }
 
             // Check if has existing mother
-            if (strncmp(position->mother, current->name, current->name_l) == 0) {
-                position->motherPerson = current;
+            // TODO: checkout vai mate nav viens otram
+            if (position->mother_l > 0) {
+                if (strncmp(position->mother, current->name, current->name_l) == 0) {
+                    if (strncmp(position->name, current->mother, position->name_l) == 0) {
+                        write(1, "Mother loop\n", 13);
+                        return 1;
+                    }
+                    position->motherPerson = current;
+                }
             }
 
             // Check if has existing father
-            else if (strncmp(position->father, current->name, current->name_l) == 0) {
-                position->fatherPerson = current;
+            // TODO: checkout vai sencis nav viens otram
+            if (position->father_l > 0) {
+                if (strncmp(position->father, current->name, current->name_l) == 0) {
+                    if (strncmp(position->name, current->father, position->name_l) == 0) {
+                        write(1, "Father loop\n", 13);
+                        return 1;
+                    }
+                    position->fatherPerson = current;
+                }
             }
 
             // Check if persons are siblings
-            int same_mother = strncmp(position->mother, current->mother, current->mother_l);
-            int same_father = strncmp(position->father, current->father, current->father_l);
+            int same_mother = 1;
+            int same_father = 1;
 
-            if (same_mother == 0 && same_father == 0) {
+            if (position->mother_l > 0 && current->mother_l > 0) {
+                same_mother = strncmp(position->mother, current->mother, current->mother_l);
+            }
+
+            if (position->father_l > 0 && current->father_l > 0) {
+                same_father = strncmp(position->father, current->father, current->father_l);
+            }
+
+            if (same_mother == 0 || same_father == 0) {
                 if (position->first_sibling == NULL) {
                     position->first_sibling = malloc(sizeof(struct Sibling));
                     position->first_sibling->person = current;
@@ -80,33 +112,113 @@ void sort_tree(struct Person *first) {
 
         position = position->next;
     }
+
+    return 0;
+}
+
+Person_t *add_to_family_tree(struct FamilyMember *family, char *name, int name_l, int level, struct Person *p) {
+    while (family != NULL) {
+        if (family->next == NULL) {
+            strcpy(family->name, name);
+            family->name_l = name_l;
+            family->level = level;
+            family->next = malloc(sizeof(struct FamilyMember));
+            family->person = p;
+            break;
+        }
+        family = family->next;
+    }
+}
+
+void sort_family(struct Person *person, int level, struct FamilyMember *family) {
+    if (person->motherPerson != NULL) {
+        sort_family(person->motherPerson, level+1, family);
+    } else {
+        if (person->mother_l != 0) {
+            add_to_family_tree(family, person->mother, person->mother_l, level+1, NULL);
+        }
+    }
+
+    if (person->fatherPerson != NULL) {
+        sort_family(person->fatherPerson, level+1, family);
+    } else {
+        if (person->father_l != 0) {
+            add_to_family_tree(family, person->father, person->father_l, level+1, NULL);
+        }
+    }
+
+    add_to_family_tree(family, person->name, person->name_l, level, person);
+
+    Sibling_t *sib = person->first_sibling;
+    while (sib != NULL) {
+        add_to_family_tree(family, sib->person->name, sib->person->name_l, level, sib->person);
+        sib = sib->next;
+    }
+}
+
+int get_deepest_level(struct FamilyMember *f) {
+    int l=0, havent_printed=0;
+    while (f != NULL) {
+        if (f->person != NULL && f->person->been_printed != 1) {
+            havent_printed = 1;
+        }
+
+        if (f->level > l) {
+            l = f->level;
+        }
+        f = f->next;
+    }
+
+    if (havent_printed == 0) {
+        return -1;
+    }
+
+    return l;
 }
 
 void print_tree(struct Person *first) {
-    if (first->motherPerson != NULL) {
-        print_tree(first->motherPerson);
-    } else {
-        write(1, first->mother, first->mother_l);
-    }
+    Person_t *vf = first;
 
-    if (first->fatherPerson != NULL) {
-        print_tree(first->fatherPerson);
-    } else {
-        write(1, first->father, first->father_l);
-    }
+    while (first != NULL) {
+        Family_t *family = malloc(sizeof(struct FamilyMember));
+        sort_family(first, 0, family);
+        int level = get_deepest_level(family);
 
-    write(1, first->name, first->name_l);
+        if (level != -1) {
+            if (vf != first) {
+                write(1, "\n", 2);
+            }
+
+            while (level >= 0) {
+                Family_t *f = family;
+                while (f != NULL) {
+                    if (f->level == level) {
+                        if (f->person != NULL) {
+                            f->person->been_printed = 1;
+                        }
+                        write(1, f->name, f->name_l);
+                    }
+                    f = f->next;
+                }
+                level--;
+            }
+        }
+
+        first = first->next;
+    }
 }
 
 int main() {
     int n;
     char buffer[MAX_BUFFER];
 
+    int multiple_mothers = 0;
+    int multiple_fathers = 0;
+
     Person_t *first;
     Person_t *current = NULL;
 
     first = malloc(sizeof(struct Person));
-    first->been_printed = 0;
 
     while((n = read(0, buffer, sizeof(buffer))) != 0) {
         if (n == 1) continue;
@@ -116,38 +228,44 @@ int main() {
                 current = first;
             } else {
                 current = current->next = malloc(sizeof(struct Person));
-                current->been_printed = 0;
             }
             strcpy(current->name, buffer+6);
             current->name_l = n-6;
         }
 
         if (strncmp(buffer, "TEVS", 4) == 0) {
+            if (current->father_l > 0) {
+                multiple_fathers = 1;
+            }
+
             strcpy(current->father, buffer+5);
             current->father_l = n-5;
         }
 
         if (strncmp(buffer, "MATE", 4) == 0) {
+            if (current->mother_l > 0) {
+                multiple_mothers = 1;
+            }
+
             strcpy(current->mother, buffer+5);
             current->mother_l = n-5;
         }
     }
 
-    sort_tree(first);
+    if (multiple_fathers == 1) {
+        write(1, "Multiple fathers were given\n", 29);
+        return 1;
+    }
+    else if (multiple_mothers == 1) {
+        write(1, "Multiple mothers were given\n", 29);
+        return 1;
+    }
+
+    if (sort_tree(first) == 1) {
+        return 1;
+    }
 
     print_tree(first);
-
-    while (first != NULL) {
-        if (first->fatherPerson != NULL) {
-            //write(1, first->fatherPerson->name, first->fatherPerson->name_l);
-        }
-
-        //write(1, first->name, first->name_l);
-        //write(1, first->father, first->father_l);
-        //write(1, first->mother, first->mother_l);
-        //fwrite(first->name, 1, sizeof(first->name), stdout);
-        first = first->next;
-    }
 
     return 0;
 }
