@@ -5,7 +5,11 @@
 void match_dir_file(DIR *pDir, char *name, char *dir) {
     struct dirent *pDirent;
 
-    while(pDir != NULL && ((pDirent = readdir(pDir)) != NULL)) {
+    if (pDir == NULL) {
+        return;
+    }
+
+    while((pDirent = readdir(pDir)) != NULL) {
         if (pDirent->d_type != DT_DIR) {
             if (strncmp(name, pDirent->d_name, 255) == 0) {
                 printf("%s/%s\n", dir, name);
