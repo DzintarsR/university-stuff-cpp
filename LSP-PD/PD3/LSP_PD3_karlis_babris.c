@@ -20,10 +20,9 @@ void match_dir_file(DIR *pDir, char *name, char *dir) {
                 strcpy(str, dir);
                 strcat(str, "/");
                 strcat(str, pDirent->d_name);
-                //printf("%s\n", str);
 
                 DIR *tDir;
-                tDir = opendir(pDirent->d_name);
+                tDir = opendir(str);
                 match_dir_file(tDir, name, str);
                 closedir(tDir);
             }
