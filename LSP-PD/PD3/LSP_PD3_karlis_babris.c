@@ -16,9 +16,15 @@ void match_dir_file(DIR *pDir, char *name, char *dir) {
             }
         } else {
             if (strncmp(pDirent->d_name, "..", 2) != 0 && strncmp(pDirent->d_name, ".", 1) != 0) {
+                char str[255];
+                strcpy(str, dir);
+                strcat(str, "/");
+                strcat(str, pDirent->d_name);
+                //printf("%s\n", str);
+
                 DIR *tDir;
                 tDir = opendir(pDirent->d_name);
-                match_dir_file(tDir, name, pDirent->d_name);
+                match_dir_file(tDir, name, str);
                 closedir(tDir);
             }
         }
