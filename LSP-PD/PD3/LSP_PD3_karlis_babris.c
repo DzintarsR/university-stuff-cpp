@@ -12,7 +12,10 @@ void match_dir_file(DIR *pDir, char *name, char *dir) {
             }
         } else {
             if (strncmp(pDirent->d_name, "..", 2) != 0 && strncmp(pDirent->d_name, ".", 1) != 0) {
-                match_dir_file(opendir(pDirent->d_name), name, dir);
+                DIR *tDir;
+                tDir = opendir(pDirent->d_name);
+                match_dir_file(tDir, name, strcpy(dir, pDirent->d_name));
+                closedir(tDir);
             }
         }
     }
