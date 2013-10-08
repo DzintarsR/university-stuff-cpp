@@ -12,7 +12,9 @@ void match_dir_file(DIR *pDir, char *name, char *dir) {
             }
         } else {
             //pDir = opendir(argv[2]);
-            printf("-> %s\n", name);
+            //if (strncmp(pDirent->d_name, "..", 2) != 0 && strncmp(pDirent->d_name, ".", 1) != 0) {
+                printf("-> %s\n", pDirent->d_name);
+            //}
             match_dir_file(opendir(pDirent->d_name), name, dir);
         }
     }
@@ -35,13 +37,6 @@ int main(int argc, char *argv[]) {
 
     match_dir_file(pDir, argv[1], argv[2]);
 
-    //while((pDirent = readdir(pDir)) != NULL) {
-    //    if (pDirent->d_type != DT_DIR) {
-    //        if (strncmp(argv[1], pDirent->d_name, 255) == 0) {
-    //            printf("%s/%s\n", argv[2], argv[1]);
-    //        }
-    //    }
-    //}
     closedir(pDir);
 
     return 0;
