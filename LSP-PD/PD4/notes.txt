@@ -1,0 +1,7 @@
+1) 
+Sistēmas izsaukumi: execve, brk, access, mmap2, open, fstat64, close, open, read, set_thread_area, mprotect, munmap, ioctl, write. Kopā ir 37 sistēmas izsaukumi, visbiežāk lietotā ir mmap2 darbība, kura veic failu piemapošanu atmiņā. Daudzo izsaukumu skaits varētu būt saistīts ar programmas darbību darbam ar failiem.
+
+2) 
+Fails "maps" satur informāciju par virtuālās atmiņas pieškiršanu darbībām procesā. Šis varētu būt noderīgi, lai izpētītu procesu atmiņas patēriņu.
+Fails "cmdline" saturēs programmai no komandrindas padotos parametrus. Var noderēt, lai pārliecinātos, ka ir ielasītas pareizās vērtības.
+Fails "io" šis fails satur statisku informāciju par i/o datiem procesam. Nolasīto, uzrakstīto simbolu skaits, u.c. Atkļūdošanas nolūkos var derēt kā uzskates līdzeklis, ka ar i/o saistītās darbības ir bijušas korektas.
