@@ -8,11 +8,13 @@
 
 #define NAME_SIZE 255
 #define DIR_SIZE 255
+#define DATE_SIZE 255
 #define BASE_DIR "."
 
 struct File {
     char name[NAME_SIZE];
     char dir[DIR_SIZE];
+    char date[DATE_SIZE];
     long long size;
 
     struct File *match;
@@ -54,9 +56,15 @@ void append_file(struct File *first_file, struct File *new_file, int type) {
             matched_time = 1;
         }
 
-        if (type == 1) {
+        if (type == 1 || type == 2) {
             if (strncmp(first_file->name, new_file->name, name_length(new_file->name)) == 0 && first_file->size == new_file->size) {
                 matched_default = 1;
+            }
+        }
+
+        if (type == 2) {
+            if (strncmp(first_file->date, new_file->date, name_length(new_file->date)) == 0) {
+                matched_time = 1;
             }
         }
 
@@ -86,7 +94,7 @@ void append_file(struct File *first_file, struct File *new_file, int type) {
     }
 }
 
-void match_dir_file(DIR *pDir, char *dir, struct File *file) {
+void match_dir_file(DIR *pDir, char *dir, struct File *file, int type) {
     struct dirent *pDirent;
 
     if (pDir == NULL) {
@@ -113,13 +121,14 @@ void match_dir_file(DIR *pDir, char *dir, struct File *file) {
             strcpy(f->name, pDirent->d_name);
             strcpy(f->dir, dir);
             f->size = p_statbuf.st_size;
-            //printf("%s\n", ctime(&p_statbuf.st_ctime));
-            append_file(file, f, 1);
+            strcpy(f->date, ctime(&p_statbuf.st_ctime));
+
+            append_file(file, f, type);
         } else {
             if (strncmp(pDirent->d_name, "..", 2) != 0 && strncmp(pDirent->d_name, ".", 1) != 0) {
                 DIR *tDir;
                 tDir = opendir(filename);
-                match_dir_file(tDir, filename, file);
+                match_dir_file(tDir, filename, file, type);
                 closedir(tDir);
             }
         }
@@ -130,14 +139,36 @@ int main(int argc, char *argv[]) {
     struct dirent *pDirent;
     DIR *pDir;
     File_t *first = malloc(sizeof(struct File));
-
     pDir = opendir(BASE_DIR);
 
-    match_dir_file(pDir, BASE_DIR, first);
+    int i;
+    int type = 1;
+    int is_help = 0;
+
+    for (i=1; i<argc; i++) {
+        if (strncmp(argv[i], "-d", 2) == 0) {
+            type = 2;
+        }
+
+        else if (strncmp(argv[i], "--help", 6) == 0) {
+            is_help = 1;
+        }
+    }
+
+    if (is_help) {
+        printf("Usage: ./md3 [options]\n");
+        printf(" --help \t usage information\n");
+        printf(" -d \t\t match by date\n");
+        printf(" -md5, --md5 \t match by content md5\n");
+
+        return 0;
+    }
+
+    match_dir_file(pDir, BASE_DIR, first, type);
 
     while (first != NULL) {
         if (first->match != NULL) {
-            printf("=== %lld %s\n", first->size, first->name);
+            printf("=== %s %lld %s\n", first->date, first->size, first->name);
             File_t *f = first;
             while (f != NULL) {
                 printf("%s/%s\n", f->dir, f->name);
