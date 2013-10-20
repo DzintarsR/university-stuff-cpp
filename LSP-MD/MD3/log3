@@ -1,0 +1,8 @@
+=== 32 log2
+./log2
+./test2/log2
+...
+=== 52 log
+./test/log
+./log
+...
