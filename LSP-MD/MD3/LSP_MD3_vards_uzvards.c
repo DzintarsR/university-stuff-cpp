@@ -7,7 +7,7 @@
 #include <time.h>
 
 #define NAME_SIZE 255
-#define DIR_SIZE 255
+#define DIR_SIZE 1000
 #define DATE_SIZE 255
 #define BASE_DIR "."
 
@@ -101,6 +101,7 @@ void append_file(struct File *first_file, struct File *new_file, int type) {
             }
         }
 
+
         if (first_file->next == NULL) {
             first_file->next = new_file;
             break;
@@ -120,7 +121,7 @@ void match_dir_file(DIR *pDir, char *dir, struct File *file, int type) {
     while((pDirent = readdir(pDir)) != NULL) {
         struct stat p_statbuf;
 
-        char filename[500];
+        char filename[DIR_SIZE];
         strcpy(filename, dir);
         strcat(filename, "/");
         strcat(filename, pDirent->d_name);
@@ -134,9 +135,12 @@ void match_dir_file(DIR *pDir, char *dir, struct File *file, int type) {
 
         if (pDirent->d_type != DT_DIR) {
             File_t *f = malloc(sizeof(struct File));
+            f->next = NULL;
+            f->match = NULL;
+            f->size = p_statbuf.st_size;
+
             strcpy(f->name, pDirent->d_name);
             strcpy(f->dir, dir);
-            f->size = p_statbuf.st_size;
             strcpy(f->date, ctime(&p_statbuf.st_ctime));
             strip_break(f->date);
 
@@ -155,8 +159,11 @@ void match_dir_file(DIR *pDir, char *dir, struct File *file, int type) {
 int main(int argc, char *argv[]) {
     struct dirent *pDirent;
     DIR *pDir;
-    File_t *first = malloc(sizeof(struct File));
     pDir = opendir(BASE_DIR);
+
+    File_t *first = malloc(sizeof(struct File));
+    first->next = NULL;
+    first->match = NULL;
 
     int i;
     int type = 1;
