@@ -33,6 +33,22 @@ int name_length(char *name) {
     }
 }
 
+void strip_break(char *name) {
+    int i=0;
+    while (1) {
+        if (name[i] == '\n') {
+            name[i] = '\0';
+            break;
+        }
+
+        if (name[i] == '\0') {
+            break;
+        }
+
+        i++;
+    }
+}
+
 void append_file(struct File *first_file, struct File *new_file, int type) {
     while (first_file != NULL) {
         int matched_default = 0;
@@ -122,6 +138,7 @@ void match_dir_file(DIR *pDir, char *dir, struct File *file, int type) {
             strcpy(f->dir, dir);
             f->size = p_statbuf.st_size;
             strcpy(f->date, ctime(&p_statbuf.st_ctime));
+            strip_break(f->date);
 
             append_file(file, f, type);
         } else {
