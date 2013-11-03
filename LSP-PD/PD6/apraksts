@@ -1,0 +1,9 @@
+2) 
+Būtībā ar malloc vajadzētu varēt rezervēt atmiņu cik operatīvajā ir pieejama atkarībā no tā vai OS is 32 vai 64 bitu, bet faktiski atmiņa netiek aizņemta. Kompilators meta paziņojumus, ja mēģina alocēt vairāk kā void *m = malloc(1024*1024*1024); atmiņas, bet ciklā rezervējot to, tas var darīt līdz kamēr ir segmentation fault.
+
+3)
+Atmiņai, kura tiek rezervēta, bet neizmantota, netiek veikta piekļuve, bet ja rezervēto daļu aizpilda ar vērtību, tad piekļūšana tiek veikta, kas veicina programmas lēnāku darbību.
+
+4)
+Stekā var norezervēt 1MB atmiņas.
+Palaižot funkciju f() tiek izmests segmentation fault. Nomainot tās tipu uz static šis errors pazūd. Tā varētu būt, jo char mainīgais tiek definēts stekā, bet static char kaudzē, kas ļauj piekļūt pie vairāk kā 1MB atmiņas.
