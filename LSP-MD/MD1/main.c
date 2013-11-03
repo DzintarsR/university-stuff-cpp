@@ -40,6 +40,16 @@ struct FamilyMember {
 
 typedef struct FamilyMember Family_t;
 
+int name_length(char *name) {
+    int i=0;
+    while (1) {
+        if (name[i] == '\0') {
+            return  i;
+        }
+        i++;
+    }
+}
+
 int sort_tree(struct Person *first) {
     Person_t *current, *position;
     position = first;
@@ -59,7 +69,7 @@ int sort_tree(struct Person *first) {
                 if (strncmp(position->mother, current->name, current->name_l) == 0) {
                     // Detects mother loop
                     if (strncmp(position->name, current->mother, position->name_l) == 0) {
-                        write(1, "Mother loop\n", 13);
+                        printf("Mother loop\n");
                         return 1;
                     }
                     position->motherPerson = current;
@@ -71,7 +81,7 @@ int sort_tree(struct Person *first) {
                 if (strncmp(position->father, current->name, current->name_l) == 0) {
                     // Detects father loop
                     if (strncmp(position->name, current->father, position->name_l) == 0) {
-                        write(1, "Father loop\n", 13);
+                        printf("Father loop\n");
                         return 1;
                     }
                     position->fatherPerson = current;
@@ -186,15 +196,11 @@ void print_tree(struct Person *first) {
         // Sort family with level and store as linked list
         sort_family(first, 0, family);
 
-        // Retrieve deepest family tree level or -1 if
+        // Retrieve deepest family tree level or -1
         // if all family members has been already printed
         int level = get_deepest_level(family);
 
         if (level != -1) {
-            if (vf != first) {
-                write(1, "\n", 2);
-            }
-
             // Print family members by level [n...0]
             while (level >= 0) {
                 Family_t *f = family;
@@ -203,7 +209,7 @@ void print_tree(struct Person *first) {
                         if (f->person != NULL) {
                             f->person->been_printed = 1;
                         }
-                        write(1, f->name, f->name_l);
+                        printf("%s\n", f->name);
                     }
                     f = f->next;
                 }
@@ -215,10 +221,10 @@ void print_tree(struct Person *first) {
     }
 }
 
-int main() {
-    int n;
+int main(int argc, char *argv[]) {
     char buffer[MAX_BUFFER];
 
+    int type = 0;
     int multiple_mothers = 0;
     int multiple_fathers = 0;
 
@@ -228,44 +234,65 @@ int main() {
     first = malloc(sizeof(struct Person));
 
     // Process and store stdin data
-    while((n = read(0, buffer, sizeof(buffer))) != 0) {
-        if (n == 1) continue;
-
-        if (strncmp(buffer, "VARDS", 5) == 0) {
-            if (current == NULL) {
-                current = first;
-            } else {
-                current = current->next = malloc(sizeof(struct Person));
-            }
-            strcpy(current->name, buffer+6);
-            current->name_l = n-6;
-        }
-
-        if (strncmp(buffer, "TEVS", 4) == 0) {
-            if (current->father_l > 0) {
-                multiple_fathers = 1;
+    while (scanf("%s", buffer) != EOF) {
+        if (type == 0) {
+            // Mark that next word will be name
+            if (strncmp(buffer, "VARDS", 5) == 0) {
+                type = 1;
             }
 
-            strcpy(current->father, buffer+5);
-            current->father_l = n-5;
-        }
-
-        if (strncmp(buffer, "MATE", 4) == 0) {
-            if (current->mother_l > 0) {
-                multiple_mothers = 1;
+            //Mark that next word will be father name
+            if (strncmp(buffer, "TEVS", 4) == 0) {
+                type = 2;
             }
 
-            strcpy(current->mother, buffer+5);
-            current->mother_l = n-5;
+            //Mark that next word will be mother name
+            if (strncmp(buffer, "MATE", 4) == 0) {
+                type = 3;
+            }
+        } else {
+            // Save name
+            if (type == 1) {
+                if (current == NULL) {
+                    current = first;
+                } else {
+                    current = current->next = malloc(sizeof(struct Person));
+                }
+                strcpy(current->name, buffer);
+                current->name_l = name_length(current->name);
+            }
+
+            // Set father
+            else if (type == 2) {
+                if (current->father_l > 0) {
+                    multiple_fathers = 1;
+                }
+
+                strcpy(current->father, buffer);
+                current->father_l = name_length(current->father);
+            }
+
+            // Set mother
+            else if (type == 3) {
+                if (current->mother_l > 0) {
+                    multiple_mothers = 1;
+                }
+
+                strcpy(current->mother, buffer);
+                current->mother_l = name_length(current->mother);
+            }
+
+            // Reset word type
+            type = 0;
         }
     }
 
     if (multiple_fathers == 1) {
-        write(1, "Multiple fathers were given\n", 29);
+        printf("Multiple fathers were given\n");
         return 1;
     }
     else if (multiple_mothers == 1) {
-        write(1, "Multiple mothers were given\n", 29);
+        printf("Multiple mothers were given\n");
         return 1;
     }
 
