@@ -121,7 +121,39 @@ void bestFit(FILE *sizesFile) {
 }
 
 void worstFit(FILE *sizesFile) {
-    /* code here */
+    int value, free, unallocated = 0;
+    chunksList_t *p, *possible_place = NULL;
+
+    while (fscanf(sizesFile, "%d", &value) != EOF) {
+        p = firstChunk;
+
+        while (p != NULL) {
+            free = p->size - p->used;
+
+            if (free >= value) {
+                if (possible_place != NULL) {
+                    if (free > (possible_place->size - possible_place->used)) {
+                        possible_place = p;
+                    }
+                } else {
+                    possible_place = p;
+                }
+            }
+
+            p = p->next;
+        }
+
+        if (p == NULL && possible_place == NULL) {
+            unallocated += value;
+        }
+
+        if (possible_place != NULL) {
+            possible_place->used += value;
+            possible_place = NULL;
+        }
+    }
+
+    printData(unallocated, "WorstFit");
 }
 
 void firstFit(FILE *sizesFile) {
