@@ -15,6 +15,8 @@ chunksList_t *firstChunk = NULL;
 chunksList_t *lastChunk;
 
 void locateMemory(FILE *chunksFile);
+float fragmentation();
+
 void bestFit(FILE *sizesFile);
 void worstFit(FILE *sizesFile);
 void firstFit(FILE *sizesFile);
@@ -84,7 +86,35 @@ void worstFit(FILE *sizesFile) {
 }
 
 void firstFit(FILE *sizesFile) {
-    /* code here */
+    int value;
+    int unallocated = 0;
+    chunksList_t *p;
+
+    while (fscanf(sizesFile, "%d", &value) != EOF) {
+        p = firstChunk;
+
+        while (p != NULL) {
+            if ((p->size - p->used) >= value) {
+                p->used += value;
+                break;
+            }
+
+            p = p->next;
+        }
+
+        if (p == NULL) {
+            unallocated += value;
+        }
+    }
+
+    p = firstChunk;
+    while (p != NULL) {
+        printf("size: %d \t used: %d\n", p->size, p->used);
+        p = p->next;
+    }
+
+    printf("unallocated amount %d\n", unallocated);
+    printf("fragmentation: %f\n", fragmentation());
 }
 
 void nextFit(FILE *sizesFile) {
@@ -126,4 +156,29 @@ void locateMemory(FILE *chunksFile) {
             p = p->next;
         }
     }
+}
+
+float fragmentation() {
+    /*
+    Algorithm: http://en.wikipedia.org/wiki/Fragmentation_%28computer%29
+    fragmentation = 1 - (largest_free_memory_block / total_free_memory)
+    returned: fragmentation * 100 (percent value of fragmentation)
+    */
+
+    int largest_free = 0;
+    int free_blocks = 0;
+    chunksList_t *p = firstChunk;
+
+    while (p != NULL) {
+        int free = p->size - p->used;
+
+        free_blocks += free;
+        if (free > largest_free) {
+            largest_free = free;
+        }
+
+        p = p->next;
+    }
+
+    return (1 - ((float)largest_free / free_blocks)) * 100;
 }
