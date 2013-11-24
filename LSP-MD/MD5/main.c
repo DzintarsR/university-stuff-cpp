@@ -212,6 +212,11 @@ float fragmentation() {
         p = p->next;
     }
 
+    /* If all memory has been allocated */
+    if (free_blocks == 0) {
+        return -1;
+    }
+
     return (1 - ((float)largest_free / free_blocks)) * 100;
 }
 
