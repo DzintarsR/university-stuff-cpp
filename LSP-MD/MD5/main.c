@@ -84,11 +84,6 @@ void worstFit(FILE *sizesFile) {
 }
 
 void firstFit(FILE *sizesFile) {
-    chunksList_t *p = lastChunk;
-    while (p != NULL) {
-        printf("%d\n", p->size);
-        p = p->prev;
-    }
     /* code here */
 }
 
