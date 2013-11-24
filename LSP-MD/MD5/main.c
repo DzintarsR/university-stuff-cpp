@@ -14,7 +14,8 @@ typedef struct chunksList chunksList_t;
 chunksList_t *firstChunk = NULL;
 chunksList_t *lastChunk;
 
-void locateMemory(FILE *chunksFile);
+void prepareEnvironment(FILE *chunksFile, FILE *sizesFile);
+void printData(int unallocated, char *name);
 float fragmentation();
 
 void bestFit(FILE *sizesFile);
@@ -56,19 +57,19 @@ int main(int argc, char *argv[]) {
 	}
 
     /* Test BestFit algorithm */
-	locateMemory(chunks);
+	prepareEnvironment(chunks, sizes);
 	bestFit(sizes);
 
 	/* Test WorstFit algorithm */
-	locateMemory(chunks);
+	prepareEnvironment(chunks, sizes);
 	worstFit(sizes);
 
 	/* Test FirstFit algorithm */
-	locateMemory(chunks);
+	prepareEnvironment(chunks, sizes);
 	firstFit(sizes);
 
 	/* Test NextFit algorithm */
-	locateMemory(chunks);
+	prepareEnvironment(chunks, sizes);
 	nextFit(sizes);
 
     fclose(chunks);
@@ -107,21 +108,48 @@ void firstFit(FILE *sizesFile) {
         }
     }
 
-    p = firstChunk;
-    while (p != NULL) {
-        printf("size: %d \t used: %d\n", p->size, p->used);
-        p = p->next;
-    }
-
-    printf("unallocated amount %d\n", unallocated);
-    printf("fragmentation: %f\n", fragmentation());
+    printData(unallocated, "FirstFit");
 }
 
 void nextFit(FILE *sizesFile) {
-    /* code here */
+    int value;
+    int unallocated = 0;
+    chunksList_t *start, *p;
+
+    start = firstChunk;
+    lastChunk->next = firstChunk;
+
+    while (fscanf(sizesFile, "%d", &value) != EOF) {
+        p = NULL;
+
+        while (p == NULL || p != start) {
+            if (p == NULL) {
+                p = start;
+            }
+
+            if ((p->size - p->used) >= value) {
+                p->used += value;
+                start = p;
+                p = NULL;
+                break;
+            }
+
+            p = p->next;
+        }
+
+        if (p == start) {
+            unallocated += value;
+        }
+    }
+
+    lastChunk->next = NULL;
+    printData(unallocated, "NextFit");
 }
 
-void locateMemory(FILE *chunksFile) {
+void prepareEnvironment(FILE *chunksFile, FILE *sizesFile) {
+    /* Reset sizes file pointer to start */
+    fseek(sizesFile, 0, SEEK_SET);
+
     if (firstChunk == NULL) {
         /* Create new two way linked list with chunks file values */
         int value;
@@ -155,6 +183,10 @@ void locateMemory(FILE *chunksFile) {
             p->used = 0;
             p = p->next;
         }
+
+        /* Reset to default */
+        firstChunk->prev = NULL;
+        lastChunk->next = NULL;
     }
 }
 
@@ -181,4 +213,20 @@ float fragmentation() {
     }
 
     return (1 - ((float)largest_free / free_blocks)) * 100;
+}
+
+void printData(int unallocated, char *name) {
+    chunksList_t *p = firstChunk;
+
+    printf("===== START %s =====\n", name);
+
+    while (p != NULL) {
+        printf("size: %d \t used: %d\n", p->size, p->used);
+        p = p->next;
+    }
+
+    printf("unallocated amount %d\n", unallocated);
+    printf("fragmentation: %f\n", fragmentation());
+
+    printf("===== END %s =====\n", name);
 }
