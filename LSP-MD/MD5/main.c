@@ -31,7 +31,7 @@ int main(int argc, char *argv[]) {
     int sizes_place = 4;
 
     /* Check if input values were given */
-    if (argc < 4) {
+    if (argc < 5) {
         printf("Specify program with input files: ./main -c chunks -s sizes\n");
         return 0;
     }
@@ -293,7 +293,7 @@ float fragmentation() {
 void printData(int unallocated, char *name) {
     chunksList_t *p = firstChunk;
 
-    printf("===== START %s =====\n", name);
+    printf("\n===== START %s =====\n", name);
 
     while (p != NULL) {
         printf("size: %d \t used: %d\n", p->size, p->used);
@@ -303,5 +303,5 @@ void printData(int unallocated, char *name) {
     printf("unallocated amount %d\n", unallocated);
     printf("fragmentation: %f\n", fragmentation());
 
-    printf("===== END %s =====\n", name);
+    printf("===== END %s =====\n\n", name);
 }
