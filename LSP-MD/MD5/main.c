@@ -33,7 +33,7 @@ int main(int argc, char *argv[]) {
         return 0;
     }
 
-    if (argv[3] == "-c") {
+    if (strcmp("-c", argv[3], 2) == 0) {
         chunks_place = 4;
         sizes_place = 2;
     }
@@ -84,6 +84,11 @@ void worstFit(FILE *sizesFile) {
 }
 
 void firstFit(FILE *sizesFile) {
+    chunksList_t *p = lastChunk;
+    while (p != NULL) {
+        printf("%d\n", p->size);
+        p = p->prev;
+    }
     /* code here */
 }
 
