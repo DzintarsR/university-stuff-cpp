@@ -269,10 +269,11 @@ float fragmentation() {
 
     int largest_free = 0;
     int free_blocks = 0;
+    int free;
     chunksList_t *p = firstChunk;
 
     while (p != NULL) {
-        int free = p->size - p->used;
+        free = p->size - p->used;
 
         free_blocks += free;
         if (free > largest_free) {
