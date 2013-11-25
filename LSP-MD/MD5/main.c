@@ -292,16 +292,20 @@ float fragmentation() {
 
 void printData(int unallocated, char *name) {
     chunksList_t *p = firstChunk;
+    int total_amount = 0;
 
     printf("\n===== START %s =====\n", name);
 
     while (p != NULL) {
         printf("size: %d \t used: %d\n", p->size, p->used);
+        total_amount += p->size;
         p = p->next;
     }
 
+    printf("total amount %d\n", total_amount);
+    printf("allocated amount %d\n", total_amount - unallocated);
     printf("unallocated amount %d\n", unallocated);
-    printf("fragmentation: %f\n", fragmentation());
+    printf("fragmentation: %f%%\n", fragmentation());
 
     printf("===== END %s =====\n\n", name);
 }
