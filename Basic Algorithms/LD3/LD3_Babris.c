@@ -38,7 +38,7 @@ int main() {
     FILE *file_template = fopen("template.in", "r");
     FILE *file_values = fopen("values.in", "r");
 
-    char * line = NULL;
+    char *line = NULL;
     size_t len = 0;
     ssize_t read;
 
