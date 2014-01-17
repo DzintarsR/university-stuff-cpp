@@ -13,6 +13,7 @@ typedef struct chunksList chunksList_t;
 
 chunksList_t *firstChunk = NULL;
 chunksList_t *lastChunk;
+int print_test = 0;
 
 void prepareEnvironment(FILE *chunksFile, FILE *sizesFile);
 void printData(int unallocated, char *name);
@@ -39,6 +40,12 @@ int main(int argc, char *argv[]) {
     if (strcmp("-c", argv[3], 2) == 0) {
         chunks_place = 4;
         sizes_place = 2;
+    }
+
+    if (argc > 5) {
+        if (strcmp("-t", argv[5], 2) == 0) {
+            print_test = 1;
+        }
     }
 
     chunks = fopen(argv[chunks_place], "r");
@@ -293,20 +300,31 @@ float fragmentation() {
 
 void printData(int unallocated, char *name) {
     chunksList_t *p = firstChunk;
-    int total_amount = 0;
+    int total_amount = 0, allocated = 0;
 
     printf("\n===== START %s =====\n", name);
 
     while (p != NULL) {
-        printf("size: %d \t used: %d\n", p->size, p->used);
+        if (print_test) {
+            printf("size: %d \t used: %d\n", p->size, p->used);
+        }
         total_amount += p->size;
+        allocated += p->used;
         p = p->next;
     }
 
-    printf("total amount %d\n", total_amount);
-    printf("allocated amount %d\n", total_amount - unallocated);
-    printf("unallocated amount %d\n", unallocated);
-    printf("fragmentation: %f%%\n", fragmentation());
+    if (print_test) {
+        printf("---\n");
+    }
+    printf("Total available chunks: %d\n", total_amount);
+    printf("Total requested sizes: %d\n", allocated + unallocated);
+    printf("Allocated amount: %d\n", allocated);
+    printf("Unallocated amount: %d\n", unallocated);
+    if (allocated != total_amount) {
+        printf("Fragmentation: %f%%\n", fragmentation());
+    } else {
+        printf("Fragmentation: all chunks has been allocated\n");
+    }
 
     printf("===== END %s =====\n\n", name);
 }
