@@ -277,7 +277,7 @@ char *create_attack(int planet_from_id, int planet_to_id, int ships, char *attac
         attack = attack->next;
     }
 
-    // Check ships
+    /* Handle ship movement */
     if (planet_from->ships > ships) {
         planet_from->ships -= ships;
     } else {
@@ -346,12 +346,16 @@ void calculate_attacks() {
     while (attack != NULL) {
         attack->time_left -= 1;
         
-        if (attack->time_left == 0) {
+        if (attack->time_left <= 0) {
             /* Handle planet takeover */
             Planet_t *planet = attack->planet_to;
 
             if ((planet->ships - attack->ships) <= 0) {
-                planet->user = attack->attacker_user;
+                if ((planet->ships - attack->ships) == 0) {
+                    planet->user = NULL;
+                } else {
+                    planet->user = attack->attacker_user;
+                }
                 planet->ships = attack->ships - planet->ships;
             } else {
                 planet->ships -= attack->ships;
@@ -406,8 +410,7 @@ int main (int argc, char *argv[]) {
     FILE *file[2];
 
     char buffer[20];
-    int value;
-    int i;
+    int value, i;
 
     /* For more random numbers */
     srand(time(NULL));
