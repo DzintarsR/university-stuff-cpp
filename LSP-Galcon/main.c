@@ -4,13 +4,20 @@
 #include "math.h"
 #include "time.h"
 
+#include <arpa/inet.h>
+#include <netinet/in.h>
+#include <pthread.h>
+#include <string.h>
+#include <sys/socket.h>
+#include <unistd.h>
+
 #define REFRESH_SECONDS 1
 #define INITIAL_SHIP_PERCENTAGE 10
 
 struct User {
     int id;
+    int unique_ident;
     char username[50];
-    char ip[21];
 
     struct User *next;
 };
@@ -67,10 +74,10 @@ Planet_t *get_planet_by_id(int planet_id) {
     return NULL;
 }
 
-User_t *get_user_by_ip(char *user_ip) {
+User_t *get_user_by_ident(int user_ident) {
     User_t *user = first_user;
     while (user != NULL) {
-        if (strcmp(user->ip, user_ip) == 0) {
+        if (user->unique_ident == user_ident) {
             break;
         }
         user = user->next;
@@ -167,8 +174,8 @@ char *get_user_data() {
     return command;
 }
 
-char *get_attack_data(char *user_ip) {
-    User_t *user = get_user_by_ip(user_ip);
+char *get_attack_data(int user_ident) {
+    User_t *user = get_user_by_ident(user_ident);
 
     /* Validate user existence */
     if (user == NULL) {
@@ -198,7 +205,7 @@ char *get_attack_data(char *user_ip) {
     return command;
 }
 
-char *join_game(char *username, char *user_ip) {
+char *join_game(char *username, int user_ident) {
     if (seconds_till_start == 0 || registered_players >= max_players) {
         return "J 0 0";
     }
@@ -231,9 +238,9 @@ char *join_game(char *username, char *user_ip) {
 
     /* Set user data */
     user->id = registered_players;
+    user->unique_ident = user_ident;
     user->next = NULL;
-    strcpy(user->username, username);
-    strcpy(user->ip, user_ip);    
+    strcpy(user->username, username);   
 
     /* Create output string */
     char *command = (char *) malloc(sizeof(char));
@@ -242,11 +249,11 @@ char *join_game(char *username, char *user_ip) {
     return command;
 }
 
-char *create_attack(int planet_from_id, int planet_to_id, int ships, char *attacker_ip) {
+char *create_attack(int planet_from_id, int planet_to_id, int ships, int attacker_ident) {
     Planet_t *planet_from = get_planet_by_id(planet_from_id);
     Planet_t *planet_to = get_planet_by_id(planet_to_id);
     
-    User_t *attacker_user = get_user_by_ip(attacker_ip);
+    User_t *attacker_user = get_user_by_ident(attacker_ident);
     User_t *defender_user = planet_to->user;
 
     if (planet_from == NULL || planet_to == NULL) {
@@ -406,6 +413,131 @@ void calculate_ships() {
     printf("--- GENERATED SHIPS ---\n\n");
 }
 
+char *parse_request(int sock, char *message) {
+    struct sockaddr_in client;
+    int addr_size = sizeof(client);
+    getsockname(sock, (struct sockaddr*)&client, (socklen_t *)&addr_size);
+
+    char username[125];
+    int planet_from_id, planet_to_id, ships;
+
+    if (seconds_till_start > 0 && message[0] != 'J') {
+        return NULL;
+    }
+
+    switch (message[0]) {
+        case 'J':
+                if (sscanf(message, "J %s", username)) {
+                    return join_game(username, sock);
+                }
+                break;
+        case 'M':
+                return get_map_data();
+                break;
+        case 'S':
+                if (sscanf(message, "S %d %d %d", &planet_from_id, &planet_to_id, &ships)) {
+                    return create_attack(planet_from_id, planet_to_id, ships, sock);
+                }
+                break;
+        case 'U':
+                return get_user_data();
+                break;
+        case 'A':
+                return get_attack_data(sock);
+                break;
+        default:
+                return NULL;
+
+    }
+
+    return NULL;
+}
+
+void *connection_handler(void *socket_desc) {
+    int sock = *(int*) socket_desc;
+    int read_size;
+    char client_message[2000];
+    char *server_message;
+
+    /* read and answer requests */
+    while ((read_size = recv(sock, client_message, 2000, 0)) > 0) {
+        printf("<--: %s\n", client_message);
+        server_message = parse_request(sock, client_message);
+
+        if (server_message == NULL) {
+            char err[1000];
+
+            sprintf(err, "ERR %s", client_message);
+
+            write(sock, err, strlen(err));
+
+            client_message[0] = '\0';
+            continue;
+        }
+
+        write(sock, server_message, strlen(server_message));
+        printf("-->: %s\n", server_message);
+
+        client_message[0] = '\0';
+    }
+
+    if (read_size == 0) {
+            printf("Client disconnected\n");
+    } 
+    else if (read_size == -1) {
+        perror("recv faile\n");
+    }
+
+    free(socket_desc);
+    return 0;
+}
+
+void *listen_connections(void *x) {
+    int socket_desc, client_sock, sockaddr_size, *new_sock;
+    struct sockaddr_in server, client;
+
+    socket_desc = socket(AF_INET, SOCK_STREAM, 0);
+    if (socket_desc == -1) {
+        printf("Could not create socket");
+    }
+
+    /* Prepare the sockaddr_in */
+    server.sin_family = AF_INET;
+    server.sin_addr.s_addr = INADDR_ANY;
+    server.sin_port = htons(8888);
+
+    if (bind(socket_desc, (struct sockaddr *) &server, sizeof(server)) < 0) {
+        perror("bind failed. Error");
+    }
+
+    listen(socket_desc, 3);
+    sockaddr_size = sizeof(struct sockaddr_in);
+
+    printf("--- Start accepting players ---\n\n");
+
+    /* Create new thread for each client */
+    while ((client_sock = accept(socket_desc, (struct sockaddr *) &client, (socklen_t*) &sockaddr_size))) {
+        if (seconds_till_start == 0) {
+           break;
+        }
+
+        printf("Accepting new user...\n");
+
+        pthread_t sniffer_thread;
+        new_sock = malloc(1);
+        *new_sock = client_sock;
+
+        if (pthread_create(&sniffer_thread, NULL, connection_handler, (void*) new_sock) < 0) {
+            perror("could not create thread");
+            break;
+        }
+    }
+
+    if (client_sock < 0) {
+        perror("accept failed");
+    }
+}
+
 int main (int argc, char *argv[]) {
     FILE *file[2];
 
@@ -422,11 +554,12 @@ int main (int argc, char *argv[]) {
 
     for (i=0; i<=1; i++) {
         if ((file[i] = fopen(argv[i+1], "r")) == NULL) {
-            printf("Can't open config file: %s\n", argv[i+1]);
+            printf("Can't open file: %s\n", argv[i+1]);
             return 0;
         }
     }
 
+    /* Read configuration */
     while (fscanf(file[0], "%s %d", buffer, &value) != EOF) {
         if (strcmp(buffer, "PLAYERS") == 0) {
             max_players = value;
@@ -452,6 +585,13 @@ int main (int argc, char *argv[]) {
     /* Generate planets */
     generate_planets(file[1]);
 
+    /* Create connection thread */
+    pthread_t connections;
+    if (pthread_create(&connections, NULL, listen_connections, (void*) 0) < 0) {
+        perror("Can't create connection thread");
+        return 0;
+    }
+
     double time_counter = 0;
     int game_time = 0;
     clock_t this_time = clock();
@@ -463,8 +603,6 @@ int main (int argc, char *argv[]) {
         last_time = this_time;
 
         if(time_counter > (double)(REFRESH_SECONDS * CLOCKS_PER_SEC)) {
-            /* TODO: Check and call J, M, S, U, A commands */
-
             if (seconds_till_start > 0) {
                 printf("Starting after %d seconds\n", seconds_till_start);
                 seconds_till_start--;
