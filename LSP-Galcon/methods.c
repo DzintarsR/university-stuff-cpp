@@ -68,7 +68,13 @@ int get_planet_capacity() {
 }
 
 int get_new_ships(int planet_capacity) {
-    return (planet_capacity / min_planet_capacity) * (SHIP_RENEWAL_PERCENTAGE / (double)100);
+    int x = (planet_capacity / min_planet_capacity) * (SHIP_RENEWAL_PERCENTAGE / (double)100);
+    
+    if (x == 0) {
+        return 1;
+    }
+    
+    return x;
 }
 
 char *get_map_data() {
@@ -287,6 +293,7 @@ void generate_planets(FILE *planets) {
 void calculate_attacks() {
     Attack_t *attack = first_attack;
 
+    printf("--- ATTACKS ---\n");
     while (attack != NULL) {
         attack->time_left -= 1;
         
@@ -294,15 +301,25 @@ void calculate_attacks() {
             /* Handle planet takeover */
             Planet_t *planet = attack->planet_to;
 
-            if ((planet->ships - attack->ships) <= 0) {
-                if ((planet->ships - attack->ships) == 0) {
-                    planet->user = NULL;
+            /* Handle sending reinforcements to own planet */
+            if (attack->attacker_user == attack->defender_user) {
+                if ((planet->ships + attack->ships) >= planet->capacity) {
+                    planet->ships = planet->capacity;
                 } else {
-                    planet->user = attack->attacker_user;
+                    planet->ships += attack->ships;
                 }
-                planet->ships = attack->ships - planet->ships;
             } else {
-                planet->ships -= attack->ships;
+                /* Handle attack to opponent planet */
+                if ((planet->ships - attack->ships) <= 0) {
+                    if ((planet->ships - attack->ships) == 0) {
+                        planet->user = NULL;
+                    } else {
+                        planet->user = attack->attacker_user;
+                    }
+                    planet->ships = attack->ships - planet->ships;
+                } else {
+                    planet->ships -= attack->ships;
+                }
             }
 
             /* Remove attack from list */
@@ -331,6 +348,7 @@ void calculate_attacks() {
         
         attack = attack->next;
     } 
+    printf("--- ATTACKS ---\n\n");
 }
 
 void calculate_ships() {
@@ -417,14 +435,13 @@ void *connection_handler(void *socket_desc) {
             sprintf(err, "ERR %s", client_message);
             write(sock, err, strlen(err));
 
-            // client_message[0] = '\0';
+            memset(client_message, 0, 2000);
             continue;
         }
 
         write(sock, server_message, strlen(server_message));
         //printf("-->: %s\n\n", server_message);
 
-        // client_message[0] = '\0';
         memset(client_message, 0, 2000);
     }
 
@@ -432,7 +449,7 @@ void *connection_handler(void *socket_desc) {
             printf("Client disconnected\n");
     } 
     else if (read_size == -1) {
-        perror("recv faile\n");
+        perror("Socket receive failed\n");
     }
 
     free(socket_desc);
