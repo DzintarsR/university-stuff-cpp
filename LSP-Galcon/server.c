@@ -108,6 +108,8 @@ int main (int argc, char *argv[]) {
     S: create_attack(1, 2, 30, "0.0.0.0:58265");
     U: get_user_data();
     A: get_attack_data("0.0.0.0:58265");
+	C: create_chat(0, "NewChatMessage", "0.0.0.0:58265");
+	R: get_chat_data("0.0.0.0:58265");
     */
     
     return 0;
