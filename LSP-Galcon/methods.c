@@ -77,6 +77,133 @@ int get_new_ships(int planet_capacity) {
     return x;
 }
 
+void set_all_users() {
+	if (all_users == NULL) {
+            all_users = malloc(sizeof(struct User));
+    }
+    /* Set user data */
+	all_users->id = 0;
+    all_users->unique_ident = 0;
+	all_users->last_read = 0;
+	all_users->next = NULL;
+	strcpy(all_users->username, "all");
+}
+
+User_t *get_user_by_id(int user_id) {
+	if (all_users->id == user_id) return all_users;
+	
+    User_t *user = first_user;
+    while (user != NULL) {
+        if (user->id == user_id) return user;
+        user = user->next;
+    }
+
+    return NULL;
+}
+
+int get_chat_count(User_t *user) {
+    Chat_t *chat = first_chat;
+    int i = 0;
+
+    while (chat != NULL) {
+		if (chat->receiver_user->id == user->id || chat->receiver_user->id == all_users->id && chat->id > user->last_read) {
+            i++;
+        }
+        chat = chat->next;
+    }
+
+    return i;
+}
+
+char *get_current_time () {
+    time_t now;
+    struct tm *tm;
+
+    now = time(0);
+    if ((tm = localtime (&now)) == NULL) {
+        printf ("Error extracting time stuff\n");
+        return NULL;
+    }
+
+    char *current_time = (char *) malloc(sizeof(char));
+    sprintf(current_time, "%02d:%02d:%02d",
+        tm->tm_hour, tm->tm_min, tm->tm_sec);
+
+    return current_time;
+}
+
+char *create_chat(int user_to_id, char *message, int user_ident) { 
+	User_t *sender_user = get_user_by_ident(user_ident);
+	User_t *receiver_user = get_user_by_id(user_to_id);
+	
+	char *time = get_current_time();
+
+    if (receiver_user == NULL || sender_user == NULL) {
+        return "C 0 0";
+    }
+
+    Chat_t *chat = first_chat;
+    for (;;) {
+        if (first_chat == NULL) {
+            chat = first_chat = malloc(sizeof(struct Chat));
+            break;
+        }        
+        if (chat->next == NULL) {
+            prev = chat;
+            chat = chat->next = malloc(sizeof(struct Chat));
+            break;
+        }
+
+        chat = chat->next;
+    }
+	
+	chat_count++;
+	/* Set chat data */
+	chat->id = chat_count;
+	strcpy(chat->time, time);
+	strcpy(chat->message, message);
+	chat->sender_user = sender_user;
+    chat->receiver_user = receiver_user;
+
+    char *command = (char *) malloc(sizeof(char));
+    sprintf(command, "C %d", receiver_user->id);	// šeit jāizdomā, ko atgriezt
+printf("** create_chat returns: %s\n", command);	// debug line
+    return command;
+}
+
+char *get_chat_data(int user_ident) {
+    User_t *user = get_user_by_ident(user_ident);
+
+    /* Validate user existence */
+    if (user == NULL) {
+        return "R 0 0 0 0";
+    }
+
+    Chat_t *chat = first_chat;
+    char buffer[120];
+    char *command = (char *) malloc(sizeof(char));
+	int chat_count = get_chat_count(user);
+    sprintf(command, "R %d", chat_count);
+	if (chat_count > 0){
+		while (chat != NULL) {
+			if (chat->receiver_user->id == user->id || chat->receiver_user->id == all_users->id && chat->id > user->last_read) {
+				sprintf(buffer, " %d_%s_%s_%d", 
+					chat->receiver_user->id, 
+					chat->time, 
+					chat->message, 
+					chat->sender_user->id
+				);
+				strcat(command, buffer);
+			}
+			/* mark last read to avoid sending again */
+			user->last_read = chat->id;
+			chat = chat->next;
+		}
+	}
+printf("** get_chat_data returns: %s\n", command);  // debug line
+    return command;
+}
+
 char *get_map_data() {
     Planet_t *planet = first_planet;
     char buffer[255];
