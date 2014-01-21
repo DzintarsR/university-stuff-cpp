@@ -149,7 +149,6 @@ char *create_chat(int user_to_id, char *message, int user_ident) {
             break;
         }        
         if (chat->next == NULL) {
-            prev = chat;
             chat = chat->next = malloc(sizeof(struct Chat));
             break;
         }
@@ -512,7 +511,8 @@ char *parse_request(int sock, char *message) {
     getsockname(sock, (struct sockaddr*)&client, (socklen_t *)&addr_size);
 
     char username[125];
-    int planet_from_id, planet_to_id, ships;
+	char chat_message[81];
+    int planet_from_id, planet_to_id, ships, user_to_id;
 
     if (seconds_till_start > 0 && message[0] != 'J') {
         return NULL;
@@ -537,6 +537,14 @@ char *parse_request(int sock, char *message) {
                 break;
         case 'A':
                 return get_attack_data(sock);
+                break;
+		case 'R':
+                return get_chat_data(sock);
+                break;
+		case 'C':
+                if (sscanf(message, "C %d %s", &user_to_id, chat_message)) {
+                    return create_chat(user_to_id, chat_message, sock);
+                }
                 break;
         default:
                 return NULL;
