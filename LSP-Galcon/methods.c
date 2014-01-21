@@ -1,68 +1,4 @@
-#include "stdio.h"
-#include "stdlib.h"
-#include "string.h"
-#include "math.h"
-#include "time.h"
-
-#include <arpa/inet.h>
-#include <netinet/in.h>
-#include <pthread.h>
-#include <string.h>
-#include <sys/socket.h>
-#include <unistd.h>
-
-#define REFRESH_SECONDS 1
-#define INITIAL_SHIP_PERCENTAGE 10
-
-struct User {
-    int id;
-    int unique_ident;
-    char username[50];
-
-    struct User *next;
-};
-
-typedef struct User User_t;
-
-struct Planet {
-    int id;
-    int x;
-    int y;
-    int capacity;
-    int ships;
-
-    struct User *user;
-    struct Planet *next;
-};
-
-typedef struct Planet Planet_t;
-
-struct Attack {
-    int ships;
-    int time_left;
-
-    struct Planet *planet_from;
-    struct Planet *planet_to;
-
-    struct User *attacker_user;
-    struct User *defender_user;
-
-    struct Attack *next;
-    struct Attack *prev;
-};
-
-typedef struct Attack Attack_t;
-
-Planet_t *first_planet = NULL;
-User_t *first_user = NULL;
-Attack_t *first_attack = NULL;
-int seconds_till_start = 0;
-int max_players = 0;
-int registered_players = 0;
-int generated_planets = 0;
-int game_speed = 0;
-int max_planet_capacity = 0;
-int min_planet_capacity = 0;
+#include "server.h"
 
 Planet_t *get_planet_by_id(int planet_id) {
     Planet_t *planet = first_planet;
@@ -132,7 +68,7 @@ int get_planet_capacity() {
 }
 
 int get_new_ships(int planet_capacity) {
-    return planet_capacity / min_planet_capacity;
+    return (planet_capacity / min_planet_capacity) * (SHIP_RENEWAL_PERCENTAGE / (double)100);
 }
 
 char *get_map_data() {
@@ -301,6 +237,7 @@ char *create_attack(int planet_from_id, int planet_to_id, int ships, int attacke
     attack->defender_user = defender_user;
     attack->time_left = time;
     attack->prev = prev;
+    attack->next = NULL;
 
     char *command = (char *) malloc(sizeof(char));
     sprintf(command, "S %d %d", ships, time);
@@ -383,13 +320,21 @@ void calculate_attacks() {
 
             free(attack);
         }
+
+        printf("FROM: %d\t TO: %d\t SHIPS: %d\t ARRIVAL: %d\t ATTACKER: %s\n", 
+            attack->planet_from->id, 
+            attack->planet_to->id, 
+            attack->ships, 
+            attack->time_left,
+            (attack->attacker_user->username == NULL) ? "None" : attack->attacker_user->username
+        );
         
         attack = attack->next;
     } 
 }
 
 void calculate_ships() {
-    int new_ships, user_id;
+    int new_ships;
     Planet_t *planet = first_planet;
 
     printf("--- GENERATED SHIPS ---\n");
@@ -404,9 +349,12 @@ void calculate_ships() {
             }
         }
 
-        user_id = (planet->user == NULL) ? 0 : planet->user->id;
-        printf("PLANET: %d\t CAPACITY: %d\t SHIPS: %d\t USER: %d\n", 
-            planet->id, planet->capacity, planet->ships, user_id);
+        printf("PLANET: %d\t CAPACITY: %d\t SHIPS: %d\t USER: %s\n", 
+            planet->id, 
+            planet->capacity, 
+            planet->ships, 
+            (planet->user == NULL) ? "None" : planet->user->username
+        );
 
         planet = planet->next;
     }
@@ -461,24 +409,23 @@ void *connection_handler(void *socket_desc) {
 
     /* read and answer requests */
     while ((read_size = recv(sock, client_message, 2000, 0)) > 0) {
-        printf("<--: %s\n", client_message);
+        //printf("\n<--: %s\n\n", client_message);
         server_message = parse_request(sock, client_message);
 
         if (server_message == NULL) {
             char err[1000];
-
             sprintf(err, "ERR %s", client_message);
-
             write(sock, err, strlen(err));
 
-            client_message[0] = '\0';
+            // client_message[0] = '\0';
             continue;
         }
 
         write(sock, server_message, strlen(server_message));
-        printf("-->: %s\n", server_message);
+        //printf("-->: %s\n\n", server_message);
 
-        client_message[0] = '\0';
+        // client_message[0] = '\0';
+        memset(client_message, 0, 2000);
     }
 
     if (read_size == 0) {
@@ -507,7 +454,7 @@ void *listen_connections(void *x) {
     server.sin_port = htons(8888);
 
     if (bind(socket_desc, (struct sockaddr *) &server, sizeof(server)) < 0) {
-        perror("bind failed. Error");
+        perror("Can't bind socket");
     }
 
     listen(socket_desc, 3);
@@ -528,107 +475,12 @@ void *listen_connections(void *x) {
         *new_sock = client_sock;
 
         if (pthread_create(&sniffer_thread, NULL, connection_handler, (void*) new_sock) < 0) {
-            perror("could not create thread");
+            perror("Can't create client thread");
             break;
         }
     }
 
     if (client_sock < 0) {
-        perror("accept failed");
+        perror("Accepting client connection failed");
     }
-}
-
-int main (int argc, char *argv[]) {
-    FILE *file[2];
-
-    char buffer[20];
-    int value, i;
-
-    /* For more random numbers */
-    srand(time(NULL));
-
-    if (argc < 3) {
-        printf("Specify program with input: ./main config_file planet_file\n");
-        return 0;
-    }
-
-    for (i=0; i<=1; i++) {
-        if ((file[i] = fopen(argv[i+1], "r")) == NULL) {
-            printf("Can't open file: %s\n", argv[i+1]);
-            return 0;
-        }
-    }
-
-    /* Read configuration */
-    while (fscanf(file[0], "%s %d", buffer, &value) != EOF) {
-        if (strcmp(buffer, "PLAYERS") == 0) {
-            max_players = value;
-        }
-
-        if (strcmp(buffer, "SPEED") == 0) {
-            game_speed = value;
-        }
-
-        if (strcmp(buffer, "START_TIME") == 0) {
-            seconds_till_start = value;
-        }
-
-        if (strcmp(buffer, "MIN_CAPACITY") == 0) {
-            min_planet_capacity = value;
-        }
-
-        if (strcmp(buffer, "MAX_CAPACITY") == 0) {
-            max_planet_capacity = value;
-        }
-    }
-
-    /* Generate planets */
-    generate_planets(file[1]);
-
-    /* Create connection thread */
-    pthread_t connections;
-    if (pthread_create(&connections, NULL, listen_connections, (void*) 0) < 0) {
-        perror("Can't create connection thread");
-        return 0;
-    }
-
-    double time_counter = 0;
-    int game_time = 0;
-    clock_t this_time = clock();
-    clock_t last_time = this_time;
-
-    for (;;) {
-        this_time = clock();
-        time_counter += (double)(this_time - last_time);
-        last_time = this_time;
-
-        if(time_counter > (double)(REFRESH_SECONDS * CLOCKS_PER_SEC)) {
-            if (seconds_till_start > 0) {
-                printf("Starting after %d seconds\n", seconds_till_start);
-                seconds_till_start--;
-            } else {
-                printf("GAME TIME IN SECONDS: %d\n\n", game_time);
-
-                /* Recalculate ship movements and planet status */
-                calculate_attacks();
-
-                /* Recalculate ships on planets */
-                calculate_ships();
-
-                game_time++;
-            }
-            time_counter -= (double)(REFRESH_SECONDS * CLOCKS_PER_SEC);
-        }
-    }
-
-    /*
-    Command samples:
-    J: join_game("karlis", "0.0.0.0:58265");
-    M: get_map_data();
-    S: create_attack(1, 2, 30, "0.0.0.0:58265");
-    U: get_user_data();
-    A: get_attack_data("0.0.0.0:58265");
-    */
-    
-    return 0;
 }
