@@ -8,6 +8,7 @@
 struct User {
     int id;
     int unique_ident;
+	int last_read;
     char username[50];
 
     struct User *next;
@@ -44,9 +45,25 @@ struct Attack {
 
 typedef struct Attack Attack_t;
 
+struct Chat {
+	int id;
+    char time[9];
+    char message[81];
+
+    struct User *sender_user;
+    struct User *receiver_user;
+
+    struct Chat *next;
+};
+
+typedef struct Chat Chat_t;
+
 Planet_t *first_planet = NULL;
 User_t *first_user = NULL;
 Attack_t *first_attack = NULL;
+Chat_t *first_chat = NULL;
+User_t *all_users = NULL;
+
 int seconds_till_start = 0;
 int max_players = 0;
 int registered_players = 0;
@@ -54,5 +71,6 @@ int generated_planets = 0;
 int game_speed = 0;
 int max_planet_capacity = 0;
 int min_planet_capacity = 0;
+int chat_count = 0;
 
 #endif
