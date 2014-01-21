@@ -132,9 +132,23 @@ char *get_current_time () {
     return current_time;
 }
 
+void replace_space( char *str, int size )
+{
+    int i;
+    /* remove space */
+    for (  i = 0; i < size; ++i ){
+        if ( str[i] == ' ' || str[i] == '\t')
+            str[i] = '|';
+		if ( str[i] == '_' )
+            str[i] = '~';
+    }
+}
+
 char *create_chat(int user_to_id, char *message, int user_ident) { 
 	User_t *sender_user = get_user_by_ident(user_ident);
 	User_t *receiver_user = get_user_by_id(user_to_id);
+	
+	replace_space(message, 81);
 	
 	char *time = get_current_time();
 
